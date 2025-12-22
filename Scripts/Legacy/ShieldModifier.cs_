@@ -1,0 +1,73 @@
+using System.Collections;
+using System.Collections.Generic;
+public class ShieldModifier 
+{
+	// Start is called before the first frame update
+	public Material material;
+	private int[] triangles;
+	private Color32[] colors;
+	Mesh mesh;
+	private Vector3[] vertices;
+	private bool iWasHit;
+	float localScaleMagnitude;
+	[SerializeField] private Color32 shieldColour;
+
+	void Start()
+	{
+		mesh = gameObject.GetComponent<MeshFilter>().mesh;
+
+		triangles = mesh.triangles;
+		vertices = mesh.vertices;
+		colors = new Color32[vertices.Length];
+		localScaleMagnitude = transform.localScale.magnitude;
+	}
+
+	void Update()
+	{
+		for (int vIndex = 0; vIndex < vertices.Length; vIndex++)
+		{
+			colors[vIndex] = Color32.Lerp(colors[vIndex], shieldColour, 1f * Time.deltaTime);
+		}
+
+		mesh.colors32 = colors;
+	}
+
+	public void Hit(RaycastHit hit)
+
+	{
+		if (iWasHit) return;
+		Vector3 hitLocalPoint = hit.transform.InverseTransformPoint(hit.point);
+		float minMag = float.MaxValue;
+		float maxMag = float.MinValue;
+
+
+		for (int vIndex = 0; vIndex < vertices.Length; vIndex++)
+		{
+			Vector3 v = vertices[vIndex];
+
+			float sqrMagnitude = (v - hitLocalPoint).sqrMagnitude;
+			// Debug.Log("\t "+v + " " + hitLocalPoint+" " +sqrMagnitude);
+
+			colors[vIndex] = Color32.Lerp(Color.red, shieldColour, sqrMagnitude / 4);
+		}
+
+		// Debug.Log($"MIN/MAX {minMag} {maxMag}");
+
+		iWasHit = false;
+
+		// var triangleIndex = hit.triangleIndex;
+		// Vector3 p0 = vertices[triangles[triangleIndex * 3 + 0]];
+		// Vector3 p1 = vertices[triangles[triangleIndex * 3 + 1]];
+		// Vector3 p2 = vertices[triangles[triangleIndex * 3 + 2]];
+
+		// var vertIndex1 = triangles[triangleIndex * 3 + 0];
+		// var vertIndex2 = triangles[triangleIndex * 3 + 1];
+		// var vertIndex3 = triangles[triangleIndex * 3 + 2];
+
+		// colors[vertIndex1] = Color.red;
+		// colors[vertIndex2] = Color.red;
+		// colors[vertIndex3] = Color.red;
+
+		mesh.colors32 = colors;
+	}
+}

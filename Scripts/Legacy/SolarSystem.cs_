@@ -1,0 +1,261 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using economy;
+using utils;
+using Random = System.Random;
+
+public class SolarSystem 
+{
+	public GameObject planetPrefab;
+	public GameObject transporter;
+	public GameObject infoUi;
+
+	List<GameObject> transporters = new List<GameObject>();
+
+	private Camera _camera;
+
+	
+	Random random = new Random();
+
+	// List<Producer>[] producers = new List<Producer>[5]();
+
+
+	static List<List<Producer>> producers = new()
+	{
+		new() { Economy.producers["grainfarm"] },
+		new() { Economy.producers["foodfactory"] },
+		new() { Economy.producers["coalmine"], Economy.producers["grapefarm"] },
+		new() { Economy.producers["steelmill"], Economy.producers["winery"] },
+		new() { Economy.producers["armfactory"], Economy.producers["dairyfarm"] },
+		new() { Economy.producers["sheepfarm"], Economy.producers["foodfactory"], Economy.producers["foodfactory"], Economy.producers["foodfactory"] },
+		new() { Economy.producers["grainfarm"] }
+	};
+
+
+	GameObject[] planets = new GameObject[producers.Count];
+
+	public List<GameObject> Transporters
+	{
+		get => transporters;
+	}
+
+	private string[] planetNames = { "0", "1", "2", "3", "4", "5", "6" };
+	private Dictionary<Good.GoodType, List<Planet>> goodsProducersMap = new();
+
+	void Start()
+	{
+		Vector3 p2 = UnityEngine.Random.onUnitSphere * 40;
+		
+		for (int i = 0; i < planets.Length; i++)
+		{   
+			p2 = Quaternion.Euler(new Vector3(0,45,0)) * (p2 - Vector3.zero) + Vector3.zero;
+
+			planets[i] = Instantiate(planetPrefab, transform, true);
+			planets[i].transform.position = new Vector3(p2.x, 0f, p2.z);
+			planets[i].name = planetNames[i];
+			planets[i].GetComponent<UserInterface>().SetupUI(infoCanvas);
+
+
+			Economy economy = new Economy(producers[i].ToArray());
+			Planet planet = planets[i].GetComponent<Planet>();
+			planet.economy = economy;
+			foreach (Producer p in producers[i])
+			{
+				List<Planet> suppliers;
+				if (goodsProducersMap.TryGetValue(p.good.type, out suppliers))
+				{
+					suppliers.Add(planet);
+				}
+				else
+				{
+					goodsProducersMap.Add(p.good.type, new List<Planet>() { planet });
+				}
+			}
+		}
+
+		for (int j = 0; j < 2; j++)
+		{
+			var pos = UnityEngine.Random.insideUnitCircle * 5;
+			GameObject _transporter = Instantiate(transporter, new Vector3(pos.x, 0, pos.y), Quaternion.identity);
+			_transporter.name = "Transporter " + j;
+
+			_transporter.GetComponent<UserInterface>().SetupUI(infoCanvas);
+			transporters.Add(_transporter);
+			_transporter.GetComponent<TransportController>().TripCompleted += TransporterTripCompleted; // register with an event
+			_transporter.GetComponent<TransportController>().ArrivedAtStart += TransporterArrivedAtStart; // register with an event
+		}
+
+		InvokeRepeating("EconomyUpdate", 2.0f, 5.0f);
+	}
+
+	public static void TransporterArrivedAtStart(object sender, EventArgs e)
+	{
+		TransportController tp = ((TransportController)sender);
+		if (!tp.AmIEmpty()) return;
+		TransportController.OrderBookEntry obe = e as TransportController.OrderBookEntry;
+
+		Debug.Log($"Picking up goods {obe.good}");
+		tp.pStart.economy.PickGoodsForTransport(obe.good, 1f);
+		tp.PickupLastOrder();
+	}
+
+
+	public static void TransporterTripCompleted(object sender, EventArgs e)
+	{
+		TransportController tp = ((TransportController)sender);
+		TransportController.OrderBookEntry obe = e as TransportController.OrderBookEntry;
+		Debug.Log($"{tp.name} delivering {tp.cargo[obe.good]}x{obe.good} from {tp.pStart.name} to {tp.pEnd.name}");
+		tp.pEnd.economy.DeliverGoods(obe.good, tp.cargo[obe.good]);
+
+		tp.ResetRoute(null, null);
+		tp.DeliverLastOrder();
+	}
+
+	Dictionary<int, Dictionary<int, List<LedgerEntry>>> combinedLedger = new();
+	private int tickCount = 0;
+
+	struct Route
+	{
+		internal readonly Good.GoodType _goodType;
+		internal readonly Planet _supplier;
+		internal readonly Planet _dest;
+		internal readonly float _value;
+		internal bool _assigned;
+
+		public Route(Good.GoodType goodType, Planet planet, Planet dest, float value, bool assigned)
+		{
+			_goodType = goodType;
+			_supplier = planet;
+			_dest = dest;
+			_value = value;
+			_assigned = assigned;
+		}
+
+		public float NormalisedDistance(TransportController tp)
+		{
+			float distance = Vector3.Distance(tp.transform.position, _supplier.transform.position);
+			var normalisedDistance = Mathf.InverseLerp(200, 0, distance);
+			Debug.Log($"Route: {_goodType}, {_supplier.name}->{_dest.name}@{_value}, {distance} {normalisedDistance}, {_value * normalisedDistance}");
+			return normalisedDistance;
+		}
+
+		public override string ToString()
+		{
+			return $"{_goodType} from {_supplier.name} to {_dest.name} value ${_value}. Is assigned: {_assigned}";
+		}
+	}
+
+	void EconomyUpdate()
+	{
+		tickCount++;
+
+		combinedLedger[tickCount] = new();
+		for (int i = 0; i < planets.Length; i++)
+		{
+			Planet planet = planets[i].GetComponent<Planet>();
+			planet.economy.EconomyTick(tickCount);
+			planets[i].GetComponent<UserInterface>().ShowInfo(planets[i].name + "\n" + planet.economy.SummaryString());
+		}
+
+
+		for (int j = 0; j < transporters.Count; j++)
+		{
+			// Am I carrying something already? ie, am I empty?
+			Dictionary<Good.GoodType, List<float>> systemDemandPrices = GetSystemDemandPrices();
+			List<Route> possibleRoutes = GetPossibleRoutes(systemDemandPrices);
+
+
+			TransportController tp = transporters[j].GetComponent<TransportController>();
+			if (!tp.AmIEmpty() || tp.AmIEnRoute()) continue;
+
+			float maxValue = 0;
+			int maxIndex = -1;
+
+			for (int i = 0; i < possibleRoutes.Count; i++)
+			{
+				Route r = possibleRoutes[i];
+
+				float normDistance = r.NormalisedDistance(tp);
+				float value = r._value;
+				value *= normDistance;
+				if (value > maxValue)
+				{
+					maxValue = value;
+					maxIndex = i;
+				}
+			}
+
+			if (maxIndex == -1) return;
+
+			Route chosenRoute = possibleRoutes[maxIndex];
+
+			Debug.Log($"Chosen Route: {chosenRoute}");
+			chosenRoute._assigned = true;
+
+			tp.ResetRoute(chosenRoute._supplier, chosenRoute._dest);
+			tp.AddToOrderBook(chosenRoute._supplier, chosenRoute._dest, chosenRoute._goodType, 1);
+			chosenRoute._supplier.economy.BookGoodsFromSupplier(chosenRoute._goodType, 1);
+			chosenRoute._dest.economy.OnOrderGoods(chosenRoute._goodType, 1);
+
+			// One at a time doesn't work with more transporters, because they're waiting for lots of ticks until its their turn again.
+			// So... have to readjust prices...!
+		}
+
+		for (int i = 0; i < planets.Length; i++)
+		{
+			Planet planet = planets[i].GetComponent<Planet>();
+			List<LedgerEntry> ledgerEntries = planet.economy.ledger[tickCount];
+			combinedLedger[tickCount].Add(i, new List<LedgerEntry>());
+			combinedLedger[tickCount][i].AddRange(ledgerEntries);
+		}
+	}
+
+	private List<Route> GetPossibleRoutes(Dictionary<Good.GoodType, List<float>> systemDemandPrices)
+	{
+		List<Route> possibleRoutes = new();
+		foreach (Good.GoodType g in systemDemandPrices.Keys)
+		{
+			List<Planet> suppliers;
+			if (!goodsProducersMap.TryGetValue(g, out suppliers))
+				suppliers = new();
+
+			foreach (Planet p in new HashSet<Planet>(suppliers))
+			{
+				for (int i = 0; i < planets.Length; i++)
+				{
+					float f = systemDemandPrices[g][i];
+					if (p.economy.rawMaterialStock[g] - p.economy.alreadyBookedStock[g] > 0 && !float.IsNaN(f))
+					{
+						Planet dest = planets[i].GetComponent<Planet>();
+						if (!p.Equals(dest))
+						{
+							possibleRoutes.Add(new Route(g, p, dest, f, false));
+						}
+					}
+				}
+			}
+		}
+
+		return possibleRoutes;
+	}
+
+	private Dictionary<Good.GoodType, List<float>> GetSystemDemandPrices()
+	{
+		Dictionary<Good.GoodType, List<float>> systemDemandPrices = new();
+		for (int i = 0; i < planets.Length; i++)
+		{
+			Planet p = planets[i].GetComponent<Planet>();
+			Dictionary<Good.GoodType, float> planetsPrice = p.economy.DemandPrices();
+
+			foreach (Good.GoodType g in planetsPrice.Keys)
+			{
+				if (!systemDemandPrices.ContainsKey(g)) systemDemandPrices.Add(g, new List<float>());
+				systemDemandPrices[g].Add(planetsPrice[g]);
+			}
+		}
+
+		return systemDemandPrices;
+	}
+}

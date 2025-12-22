@@ -1,0 +1,95 @@
+[gd_scene load_steps=11 format=3 uid="uid://cauxcbftppnqh"]
+
+[ext_resource type="Script" uid="uid://el11rwoa07e1" path="res://Scripts/Controllers/PlayerController.cs" id="1_732wk"]
+[ext_resource type="PackedScene" uid="uid://74n7d71r2ja4" path="res://models/Adder.blend" id="2_ytkpy"]
+[ext_resource type="Texture2D" uid="uid://bjmrd8ad650ec" path="res://ParticleFirecloud.png" id="3_kutke"]
+[ext_resource type="PackedScene" uid="uid://xf2xp2eghmh0" path="res://models/player_fbx/A_simple_space_corvet_0228013317_texture.fbx" id="4_2rltj"]
+
+[sub_resource type="Curve" id="Curve_7m06k"]
+_data = [Vector2(0.119815, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 2
+
+[sub_resource type="CurveTexture" id="CurveTexture_20f10"]
+curve = SubResource("Curve_7m06k")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_nqrqf"]
+lifetime_randomness = 1.0
+direction = Vector3(2.08165e-12, 2.08165e-12, 2)
+spread = 1.0
+flatness = 1.0
+initial_velocity_min = 10.0
+initial_velocity_max = 10.0
+angular_velocity_min = -720.0
+angular_velocity_max = 171.24
+gravity = Vector3(2.08165e-12, 2.08165e-12, 2.08165e-12)
+linear_accel_max = 2.0
+scale_min = 0.2
+scale_max = 0.2
+scale_curve = SubResource("CurveTexture_20f10")
+color = Color(0.976471, 0.443137, 0.435294, 1)
+hue_variation_max = 1.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_om70i"]
+transparency = 1
+blend_mode = 1
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.647059, 0.219608, 0.176471, 1)
+albedo_texture = ExtResource("3_kutke")
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_bwuev"]
+material = SubResource("StandardMaterial3D_om70i")
+size = Vector2(1, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_tsyqd"]
+size = Vector3(1, 2, 1)
+
+[node name="Player" type="RigidBody3D" groups=["Player"]]
+transform = Transform3D(-4.37114e-08, 3.48787e-16, 1, 3.48787e-16, 1, -3.48787e-16, -1, 3.48787e-16, -4.37114e-08, 0, 0, 0)
+collision_layer = 2
+collision_mask = 60
+axis_lock_linear_y = true
+axis_lock_angular_x = true
+mass = 100.0
+gravity_scale = 2.66454e-15
+contact_monitor = true
+linear_damp_mode = 1
+angular_velocity = Vector3(3.63316e-14, 3.63316e-14, 3.63316e-14)
+script = ExtResource("1_732wk")
+
+[node name="Visual" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 1.12238e-23, 0, 1.12238e-23, 1, 0, 0, 0)
+
+[node name="Adder" parent="Visual" instance=ExtResource("2_ytkpy")]
+transform = Transform3D(1, 0, 0, 0, 1, 1.12238e-23, 0, 1.12238e-23, 1, 2.08165e-12, 2.08165e-12, 2.08165e-12)
+visible = false
+
+[node name="Engine_2" type="Node3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 1.12238e-23, 0, 1.12238e-23, 1, 0.1, 2.08165e-12, 0.7)
+
+[node name="GPUParticles3D" type="GPUParticles3D" parent="Visual/Engine_2"]
+transform = Transform3D(0.1, -3.48787e-17, 3.48787e-17, 3.48787e-17, 0.1, -3.48787e-17, -3.48787e-17, 3.48787e-17, 0.1, 2.08165e-12, 2.08165e-12, 0.05)
+amount = 200
+lifetime = 0.2
+speed_scale = 0.8
+randomness = 1.0
+process_material = SubResource("ParticleProcessMaterial_nqrqf")
+draw_pass_1 = SubResource("PlaneMesh_bwuev")
+
+[node name="Engine_1" type="Node3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 1.12238e-23, 0, 1.12238e-23, 1, -0.1, 2.08165e-12, 0.7)
+
+[node name="GPUParticles3D" type="GPUParticles3D" parent="Visual/Engine_1"]
+transform = Transform3D(0.1, -3.48787e-17, 3.48787e-17, 3.48787e-17, 0.1, -3.48787e-17, -3.48787e-17, 3.48787e-17, 0.1, 2.08165e-12, 2.08165e-12, 0.05)
+amount = 200
+lifetime = 0.2
+speed_scale = 0.8
+randomness = 1.0
+process_material = SubResource("ParticleProcessMaterial_nqrqf")
+draw_pass_1 = SubResource("PlaneMesh_bwuev")
+
+[node name="A_simple_space_corvet_0228013317_texture" parent="Visual" instance=ExtResource("4_2rltj")]
+transform = Transform3D(-1, 0, -8.74228e-08, 0, 1, -7.20166e-24, 8.74228e-08, 1.12238e-23, -1, 0, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, -6.66422e-31, 2.91302e-38, 0, -4.37114e-08, -1, 6.66422e-31, 1, -4.37114e-08, -0.00072217, 5.96046e-08, 0.000882745)
+shape = SubResource("BoxShape3D_tsyqd")

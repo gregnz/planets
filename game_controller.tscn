@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://dhhib8d63v4qd"]
+
+[ext_resource type="Script" uid="uid://bas8vlutvf5sv" path="res://Scripts/Core/GameController.cs" id="1_cow35"]
+
+[node name="GameController" type="Node3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0111012, -0.00273752, -0.0121837)
+script = ExtResource("1_cow35")

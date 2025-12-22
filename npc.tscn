@@ -1,0 +1,110 @@
+[gd_scene load_steps=13 format=3 uid="uid://c0jn0aplhuavo"]
+
+[ext_resource type="PackedScene" uid="uid://74n7d71r2ja4" path="res://models/Adder.blend" id="1_h31ks"]
+[ext_resource type="Script" uid="uid://cg2r1ycvb6dv8" path="res://Scripts/Controllers/Npc.cs" id="1_ynkbf"]
+[ext_resource type="PackedScene" uid="uid://bknx4dsgm2ddo" path="res://health_bar.tscn" id="2_r03y6"]
+[ext_resource type="Texture2D" uid="uid://bjmrd8ad650ec" path="res://ParticleFirecloud.png" id="2_yf27o"]
+[ext_resource type="Texture2D" uid="uid://bawwkg4rno8j1" path="res://assets/images/square.png" id="4_qx08a"]
+[ext_resource type="PackedScene" uid="uid://cdcbktnn8olxe" path="res://A_simple_space_corvet_0228011859_texture_obj/A_simple_space_corvet_0228012649_texture_fbx/A_simple_space_corvet_0228012649_texture.fbx" id="6_oj0q5"]
+[ext_resource type="Script" uid="uid://bglu0yrjwmfpm" path="res://Scripts/AI/AIController.cs" id="7_d61ma"]
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_qa8y3"]
+lifetime_randomness = 0.17
+direction = Vector3(2.08165e-12, 2.08165e-12, 2)
+spread = 1.0
+flatness = 1.0
+initial_velocity_min = 0.1
+initial_velocity_max = 0.1
+angular_velocity_max = 10.0
+gravity = Vector3(2.08165e-12, 2.08165e-12, 2.08165e-12)
+linear_accel_max = 2.0
+scale_min = 0.1
+scale_max = 0.2
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_x1kx7"]
+transparency = 1
+blend_mode = 1
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.647059, 0.219608, 0.176471, 1)
+albedo_texture = ExtResource("2_yf27o")
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_8wusn"]
+material = SubResource("StandardMaterial3D_x1kx7")
+size = Vector2(1, 1)
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_fyx7x"]
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_1hwiu"]
+viewport_path = NodePath("SubViewport")
+
+[node name="Npc" type="RigidBody3D"]
+collision_layer = 4
+collision_mask = 62
+axis_lock_linear_y = true
+axis_lock_angular_x = true
+axis_lock_angular_z = true
+mass = 100.0
+gravity_scale = 2.66454e-15
+contact_monitor = true
+linear_damp_mode = 1
+script = ExtResource("1_ynkbf")
+
+[node name="Visual" type="Node3D" parent="."]
+
+[node name="Adder" parent="Visual" instance=ExtResource("1_h31ks")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.08165e-12, 2.08165e-12, 2.08165e-12)
+visible = false
+
+[node name="Engine_2" type="Node3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.1, 2.08165e-12, 0.6)
+
+[node name="GPUParticles3D" type="GPUParticles3D" parent="Visual/Engine_2"]
+transform = Transform3D(0.1, -3.48787e-17, 3.48787e-17, 3.48787e-17, 0.1, -3.48787e-17, -3.48787e-17, 3.48787e-17, 0.1, -1.84789e-17, 1.84789e-17, 0.0529804)
+amount = 150
+lifetime = 0.2
+speed_scale = 0.8
+randomness = 1.0
+process_material = SubResource("ParticleProcessMaterial_qa8y3")
+draw_pass_1 = SubResource("PlaneMesh_8wusn")
+
+[node name="Engine_1" type="Node3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1, 2.08165e-12, 0.6)
+
+[node name="GPUParticles3D" type="GPUParticles3D" parent="Visual/Engine_1"]
+transform = Transform3D(0.1, -3.48787e-17, 3.48787e-17, 3.48787e-17, 0.1, -3.48787e-17, -3.48787e-17, 3.48787e-17, 0.1, -1.84789e-17, 1.84789e-17, 0.0529804)
+amount = 150
+lifetime = 0.2
+speed_scale = 0.8
+randomness = 1.0
+process_material = SubResource("ParticleProcessMaterial_qa8y3")
+draw_pass_1 = SubResource("PlaneMesh_8wusn")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, -6.66422e-31, 2.91302e-38, 0, -4.37114e-08, -1, 6.66422e-31, 1, -4.37114e-08, 0, 0, 0)
+shape = SubResource("CapsuleShape3D_fyx7x")
+
+[node name="TargetedReticule" type="Sprite3D" parent="."]
+pixel_size = 0.02
+axis = 1
+billboard = 2
+texture = ExtResource("4_qx08a")
+
+[node name="HealthBars" type="Sprite3D" parent="."]
+offset = Vector2(2.08165e-12, 100)
+flip_h = true
+pixel_size = 0.012
+axis = 1
+billboard = 2
+texture = SubResource("ViewportTexture_1hwiu")
+
+[node name="SubViewport" type="SubViewport" parent="."]
+transparent_bg = true
+size = Vector2i(170, 300)
+
+[node name="Node2D" parent="SubViewport" instance=ExtResource("2_r03y6")]
+
+[node name="A_simple_space_corvet_0228012649_texture" parent="." instance=ExtResource("6_oj0q5")]
+transform = Transform3D(-4.37114e-08, 0, -1, 0, 1, 0, 1, 0, -4.37114e-08, 0, 0, 0)
+
+[node name="AIController" type="Node3D" parent="."]
+script = ExtResource("7_d61ma")

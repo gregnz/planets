@@ -1,0 +1,118 @@
+[gd_scene load_steps=9 format=3 uid="uid://ddir8g7u58u16"]
+
+[ext_resource type="PackedScene" uid="uid://cauxcbftppnqh" path="res://player.tscn" id="1_56xym"]
+[ext_resource type="Script" uid="uid://c27cb7o1gisml" path="res://Scripts/Core/Gui.cs" id="1_rr1md"]
+[ext_resource type="Script" uid="uid://hv5c6usif34f" path="res://Camera3D.gd" id="1_tbpeb"]
+[ext_resource type="Theme" uid="uid://cqms1cb04ijwo" path="res://default_theme.tres" id="2_jlqvm"]
+[ext_resource type="PackedScene" uid="uid://c5n5wyh5yxh6e" path="res://starfield.tscn" id="4_h1tj6"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_neklb"]
+
+[sub_resource type="Sky" id="Sky_t1jsf"]
+sky_material = SubResource("ProceduralSkyMaterial_neklb")
+
+[sub_resource type="Environment" id="Environment_w22xp"]
+background_mode = 2
+sky = SubResource("Sky_t1jsf")
+
+[node name="Root3D" type="Node3D"]
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="Gui" type="MarginContainer" parent="UI"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_jlqvm")
+script = ExtResource("1_rr1md")
+
+[node name="HUDLayout" type="Control" parent="UI/Gui"]
+layout_mode = 2
+
+[node name="ShipInfoPanel" type="MarginContainer" parent="UI/Gui/HUDLayout"]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -150.0
+offset_right = 300.0
+grow_vertical = 0
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="ShipInfoLabel" type="Label" parent="UI/Gui/HUDLayout/ShipInfoPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Ship Info"
+vertical_alignment = 2
+
+[node name="TargetInfoPanel" type="MarginContainer" parent="UI/Gui/HUDLayout"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -350.0
+offset_bottom = 500.0
+grow_horizontal = 0
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+
+[node name="VBox" type="VBoxContainer" parent="UI/Gui/HUDLayout/TargetInfoPanel"]
+layout_mode = 2
+
+[node name="TargetInfoLabel" type="Label" parent="UI/Gui/HUDLayout/TargetInfoPanel/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Target Info"
+horizontal_alignment = 2
+
+[node name="TargetHistoryLabel" type="Label" parent="UI/Gui/HUDLayout/TargetInfoPanel/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 12
+text = "History..."
+horizontal_alignment = 2
+
+[node name="WeaponInfoPanel" type="MarginContainer" parent="UI/Gui/HUDLayout"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -300.0
+offset_top = -100.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="WeaponInfoLabel" type="Label" parent="UI/Gui/HUDLayout/WeaponInfoPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Weapons"
+horizontal_alignment = 2
+vertical_alignment = 2
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.866023, -0.433016, 0.250001, 0, 0.499998, 0.866027, -0.500003, 0.749999, -0.43301, 0, 0, 0)
+shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_w22xp")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, -6.97574e-16, -1.5246e-23, -1.5246e-23, -4.37114e-08, 1, -6.97574e-16, -1, -4.37114e-08, 0, 10, 0)
+current = true
+script = ExtResource("1_tbpeb")
+
+[node name="Player" parent="." instance=ExtResource("1_56xym")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 2.08165e-12, -5)
+collision_layer = 3
+
+[node name="Starfield" parent="." instance=ExtResource("4_h1tj6")]
+
+[connection signal="body_entered" from="Player" to="Player" method="_OnBodyEntered"]

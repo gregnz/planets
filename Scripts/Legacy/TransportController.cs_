@@ -1,0 +1,228 @@
+using System;
+using utils;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using AI.SteeringBehaviours;
+using economy;
+using Godot;
+using Quaternion = System.Numerics.Quaternion;
+using Vector2 = System.Numerics.Vector2;
+using Vector3 = System.Numerics.Vector3;
+
+
+public class TransportController
+{
+	public event EventHandler TripCompleted;
+	public event EventHandler<EventArgs> ArrivedAtStart;
+
+
+	public string shipName;
+	private int curveCount = 0;
+	private int layerOrder = 0;
+	private int SEGMENT_COUNT = 50;
+
+	Vector3[] points = new Vector3[50];
+
+	public int pIdx = 0;
+
+	internal Planet pStart;
+	internal Planet pEnd;
+	public Vector3 pIndex;
+
+	Vector3 midPointAdjustment;
+	private List<OrderBookEntry> OrderBook = new();
+	public Dictionary<Good.GoodType, float> cargo = new() { };
+
+	private RigidBody3D rb;
+	private ShipFactory.ShipSpec shipSpecification;
+
+	void Awake()
+	{
+		rb = gameObject.GetComponent<Rigidbody>();
+		Vector2 randomPoint = UnityEngine.Random.insideUnitCircle * 2;
+		midPointAdjustment = new Vector3(randomPoint.x, 0, randomPoint.y);
+
+		GameObject go = new GameObject("trails1");
+		go.transform.parent = this.gameObject.transform;
+		go.transform.localPosition = new Vector3(-0.01f, 0, -0.02f);
+		TrailRenderer tr1 = go.AddComponent<TrailRenderer>();
+
+		void initTrailRenderer(TrailRenderer tr)
+		{
+			tr.time = 0.3f;
+			tr.minVertexDistance = 0.0f;
+			AnimationCurve curve = new AnimationCurve();
+			curve.AddKey(0.0f, 0.000f);
+			curve.AddKey(0.25f, 0.05f);
+			curve.AddKey(0.5f, 0.00f);
+			tr.widthCurve = curve;
+			// tr.material = trailMaterial;
+		}
+
+		initTrailRenderer(tr1);
+	}
+
+	void Start()
+	{
+		this.shipSpecification = ShipFactory.GetPreset(ShipFactory.ShipType.Type6Transporter);
+		if (!lineRenderer)
+		{
+			lineRenderer = GetComponent<LineRenderer>();
+		}
+
+		lineRenderer.sortingLayerID = layerOrder;
+		lineRenderer.startWidth = 0.01f;
+		lineRenderer.endWidth = 0.01f;
+
+		lineRenderer.startColor = Color.yellow;
+		lineRenderer.endColor = Color.yellow;
+
+		lineRenderer.SetPosition(0, Vector3.zero);
+		lineRenderer.SetPosition(1, Vector3.up);
+		Material whiteDiffuseMat = new Material(Shader.Find("Standard"));
+		lineRenderer.material = whiteDiffuseMat;
+		curveCount = (int)4 / 3;
+	}
+
+
+	void Update()
+	{
+		GetComponent<UserInterface>().ShowInfo(GetCargoString());
+
+		if ((pStart == null) || (pEnd == null)) return;
+		pIndex = pEnd.transform.position;
+
+		
+		Quaternion targetRotation = Quaternion.LookRotation(points[pIdx] - transform.position);
+		transform.rotation = Quaternion.RotateTowards(transform.rotation, targetRotation, Time.deltaTime * 150);
+		transform.Translate(Vector3.forward * shipSpecification.maxSpeed * Time.deltaTime);
+
+		// SteeringBehaviour steeringBehaviour = new Arrive(points[pIdx], gameObject.transform.position, 
+		//     shipSpecification.maxAcceleration, shipSpecification.maxSpeed, 5f,15f, 5f, rb.velocity);
+
+		// Curves.DrawCurve(lineRenderer, 1, 50, transform.position, points[pIdx],Vector3.zero);
+		// Vector3 collisionAvoidanceForce = new CollisionAvoidance(gameObject.transform.position, rb.velocity,
+			// shipSpecification.maxAcceleration, positions.ToArray(), velocities.ToArray()).Move();
+
+		// if (collisionAvoidanceForce.magnitude > 0.005f)
+			// force = collisionAvoidanceForce * 1;
+		// force += steeringBehaviour.Move();
+
+		// steeringBehaviour.LookAtDirection(rb, steeringBehaviour.Move(), shipSpecification.rotateSpeed);
+		// steeringBehaviour.Steer(rb, transform.forward * shipSpecification.maxAcceleration, shipSpecification.maxSpeed);
+		
+
+		bool didHit = false;
+
+		if (((transform.position - points[pIdx]).sqrMagnitude) < 4.0f)
+		{
+			didHit = true;
+			pIdx++;
+		}
+
+		// This means I've arrived at the start, ie, hit the zero-th index.
+		if (pIdx == 1 && didHit)
+		{
+			OrderBookEntry orderBookEntry = OrderBook.Last();
+			ArrivedAtStart?.Invoke(this, orderBookEntry);
+		}
+
+		if (pIdx >= points.Length)
+		{
+			OrderBookEntry orderBookEntry = OrderBook.Last();
+			TripCompleted?.Invoke(this, orderBookEntry);
+		}
+
+		Debug.DrawRay(transform.position, transform.forward, Color.blue, 5);
+	}
+
+	private string GetCargoString()
+	{
+		string infoString = name;
+		foreach (KeyValuePair<Good.GoodType, float> kvp in cargo)
+		{
+			infoString += $"{kvp.Key} {kvp.Value}\n";
+		}
+
+		if (pStart != null && pEnd != null)
+			infoString += $"{pStart.name} -> {pEnd.name}";
+
+		return infoString;
+	}
+
+	public bool AmIEmpty()
+	{
+		return cargo.Sum(x => x.Value) == 0;
+	}
+
+	public bool AmIEnRoute()
+	{
+		return OrderBook.Count > 0 && OrderBook.Last().state == OrderBookEntry.State.ORDERED;
+	}
+
+	public void AssignCargo(Good.GoodType good, float quantity, OrderBookEntry.State state)
+	{
+		float q_ = 0;
+		if (!cargo.TryGetValue(good, out q_))
+			cargo[good] = 0;
+
+		cargo[good] += quantity;
+
+		OrderBook.Last().state = state;
+	}
+
+	public void ResetRoute(Planet pStart, Planet pEnd)
+	{
+		this.pStart = pStart;
+		this.pEnd = pEnd;
+		if (!(pStart == null || pEnd == null))
+			points = Curves.DrawCurve(lineRenderer, 10,
+				pStart.transform.position, pEnd.transform.position, 
+				new[]{(this.pStart.transform.right, this.pStart.transform.forward)});
+
+		pIdx = 0;
+	}
+
+	public class OrderBookEntry : EventArgs
+	{
+		private readonly Planet start;
+		private readonly Planet end;
+		public readonly Good.GoodType good;
+		private readonly float ev;
+		public State state;
+
+		public enum State
+		{
+			ORDERED,
+			PICKED_UP,
+			DELIVERED,
+		}
+
+
+		public OrderBookEntry(Planet start, Planet end, Good.GoodType goodType, float ev)
+		{
+			this.start = start;
+			this.end = end;
+			this.good = goodType;
+			this.ev = ev;
+			this.state = State.ORDERED;
+		}
+	}
+
+
+	public void AddToOrderBook(Planet start, Planet end, Good.GoodType goodType, float ev)
+	{
+		this.OrderBook.Add(new OrderBookEntry(start, end, goodType, ev));
+	}
+
+	public void PickupLastOrder()
+	{
+		AssignCargo(OrderBook.Last().good, 1f, OrderBookEntry.State.PICKED_UP);
+	}
+
+	public void DeliverLastOrder()
+	{
+		AssignCargo(OrderBook.Last().good, -1f, OrderBookEntry.State.DELIVERED);
+	}
+}

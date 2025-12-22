@@ -1,0 +1,99 @@
+[gd_scene load_steps=12 format=3 uid="uid://chkp7x2uq4eqx"]
+
+[ext_resource type="PackedScene" uid="uid://c37ccrtdi8smo" path="res://tigersclaw.glb" id="1_model"]
+[ext_resource type="Script" uid="uid://cg2r1ycvb6dv8" path="res://Scripts/Controllers/Npc.cs" id="2_npc"]
+[ext_resource type="PackedScene" uid="uid://bknx4dsgm2ddo" path="res://health_bar.tscn" id="3_health"]
+[ext_resource type="Texture2D" uid="uid://bjmrd8ad650ec" path="res://ParticleFirecloud.png" id="4_particle"]
+[ext_resource type="Texture2D" uid="uid://bawwkg4rno8j1" path="res://assets/images/square.png" id="5_reticule"]
+[ext_resource type="Script" uid="uid://bglu0yrjwmfpm" path="res://Scripts/AI/AIController.cs" id="6_ai"]
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_engine"]
+lifetime_randomness = 0.17
+direction = Vector3(0, 0, 2)
+spread = 2.0
+flatness = 1.0
+initial_velocity_min = 0.2
+initial_velocity_max = 0.3
+gravity = Vector3(0, 0, 0)
+scale_min = 0.3
+scale_max = 0.6
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_engine"]
+transparency = 1
+blend_mode = 1
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.8, 0.4, 0.2, 1)
+albedo_texture = ExtResource("4_particle")
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_engine"]
+material = SubResource("StandardMaterial3D_engine")
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_collision"]
+size = Vector3(8, 2, 12)
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_health"]
+viewport_path = NodePath("SubViewport")
+
+[node name="TigersClaw" type="RigidBody3D"]
+collision_layer = 4
+collision_mask = 62
+axis_lock_linear_y = true
+axis_lock_angular_x = true
+axis_lock_angular_z = true
+mass = 5000.0
+gravity_scale = 0.0
+contact_monitor = true
+max_contacts_reported = 10
+linear_damp_mode = 1
+script = ExtResource("2_npc")
+
+[node name="Visual" type="Node3D" parent="."]
+
+[node name="Model" parent="Visual" instance=ExtResource("1_model")]
+transform = Transform3D(-4.97698, 0, 0.479229, 0, 5, 0, -0.479229, 0, -4.97698, 0, 0, 0)
+
+[node name="Engine_Left" type="Node3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0, 5)
+
+[node name="GPUParticles3D" type="GPUParticles3D" parent="Visual/Engine_Left"]
+transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, 0, 0, 0)
+amount = 200
+lifetime = 0.3
+process_material = SubResource("ParticleProcessMaterial_engine")
+draw_pass_1 = SubResource("PlaneMesh_engine")
+
+[node name="Engine_Right" type="Node3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0, 5)
+
+[node name="GPUParticles3D" type="GPUParticles3D" parent="Visual/Engine_Right"]
+transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, 0, 0, 0)
+amount = 200
+lifetime = 0.3
+process_material = SubResource("ParticleProcessMaterial_engine")
+draw_pass_1 = SubResource("PlaneMesh_engine")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_collision")
+
+[node name="TargetedReticule" type="Sprite3D" parent="."]
+pixel_size = 0.04
+axis = 1
+billboard = 2
+texture = ExtResource("5_reticule")
+
+[node name="HealthBars" type="Sprite3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
+flip_h = true
+pixel_size = 0.02
+axis = 1
+billboard = 2
+texture = SubResource("ViewportTexture_health")
+
+[node name="SubViewport" type="SubViewport" parent="."]
+transparent_bg = true
+size = Vector2i(170, 300)
+
+[node name="HealthBar" parent="SubViewport" instance=ExtResource("3_health")]
+
+[node name="AIController" type="Node3D" parent="."]
+script = ExtResource("6_ai")

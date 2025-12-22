@@ -1,0 +1,291 @@
+using System;
+using System.Collections.Generic;
+using Random = System.Random;
+
+public class ShipMesh :  ITarget
+{
+	public float heightY = 0.5f;
+	public float widthX = 1;
+	public float lengthZ = 2f;
+
+	[SerializeField, HideInInspector] public MeshFilter meshFilter;
+
+	public Material shipMaterial;
+	BoxCollider boxCollider;
+	public GameObject meshObj;
+
+	Random random = new System.Random();
+
+	[SerializeField] public AnimationCurve shape;
+
+	void OnEnable()
+	{
+		if (meshFilter == null)
+		{
+			meshObj = new GameObject("mesh");
+			meshObj.transform.parent = transform;
+			meshObj.transform.localPosition = Vector3.zero;
+			meshObj.transform.localRotation = Quaternion.identity;
+			meshObj.transform.localScale = Vector3.one;
+
+			// meshObj.AddComponent<MeshRenderer>().sharedMaterial = new Material(Shader.Find("Standard"));
+			meshObj.AddComponent<MeshRenderer>().sharedMaterial = shipMaterial;
+			meshFilter = meshObj.AddComponent<MeshFilter>();
+
+			Vector3[] centres =
+			{
+				new Vector3(-.25f, 0, 0), new Vector3(0f, 0, .25f), new Vector3(0f, 0, -.25f), new Vector3(.25f, 0, 0),
+			};
+			for (int i = 0; i < 4; i++)
+			{
+				boxCollider = meshObj.AddComponent<BoxCollider>();
+				boxCollider.center = centres[i];
+				boxCollider.isTrigger = false;
+				boxCollider.tag = "Ship";
+			}
+		}
+		else
+		{
+			meshObj = transform.Find("mesh").gameObject;
+			meshFilter = meshObj.GetComponent<MeshFilter>();
+		}
+
+		///This refers to the Player layer. Seems magic numbered, but not sure if theres a better way to look this up.
+		/// It's needed to stop the lasers hitting the colliders
+		meshObj.layer = 3;
+
+		var mesh = new Mesh();
+		meshFilter.sharedMesh = mesh;
+
+
+		mesh.Clear();
+		// CalcMesh(mesh);
+		CalcMesh2(mesh);
+		meshFilter.mesh = mesh;
+	}
+
+	private void CalcMesh(Mesh mesh)
+	{
+		var widthOffset = widthX * 0.5f;
+		var heightOffset = heightY * 0.5f;
+		var lengthOffset = -lengthZ * 0.5f;
+
+		var verts = new List<Vector3>();
+		var tris = new List<int>();
+		int BULKHEAD_COUNT = random.Next(9, 10);
+
+		// https://easings.net/en#easeInOutCubic
+		//https://blog.unity.com/games/animation-curves-the-ultimate-design-lever
+		static double easeInOutSine(float x)
+		{
+			return -(Math.Cos(Math.PI * x) - 1) / 2;
+		}
+
+		static double easeInOutCubic(float x)
+		{
+			return x < 0.5 ? 4 * x * x * x : 1 - Math.Pow(-2 * x + 2, 3) / 2;
+		}
+
+		for (int i = 0; i < BULKHEAD_COUNT; i++)
+		{
+			float mod = shape.Evaluate(i / (BULKHEAD_COUNT - 1f)) * 2f;
+
+			verts.Add(new Vector3(mod * -widthOffset, heightOffset * mod, lengthOffset));
+			verts.Add(new Vector3(mod * widthOffset, heightOffset * mod, lengthOffset));
+			verts.Add(new Vector3(mod * widthOffset, -heightOffset, lengthOffset));
+			verts.Add(new Vector3(mod * -widthOffset, -heightOffset, lengthOffset));
+
+			int vertIndex = i * 4;
+
+			AddRectTris(tris, vertIndex);
+
+			lengthOffset += lengthZ * 0.1f;
+		}
+
+		for (int i = 0; i < BULKHEAD_COUNT - 1; i++)
+		{
+			int vertIndex = i * 4;
+			AddConnectingTris(tris, vertIndex);
+		}
+
+		Debug.Log(string.Join(", ", verts.ToArray()));
+		Debug.Log(string.Join(", ", tris.ToArray()));
+		mesh.vertices = verts.ToArray();
+		mesh.triangles = tris.ToArray();
+
+		mesh.RecalculateNormals();
+		mesh.RecalculateBounds();
+	}
+
+	private static void AddRectTris(List<int> tris, int vertIndex)
+	{
+		tris.AddRange(new int[] {vertIndex + 0, vertIndex + 1, vertIndex + 2});
+		tris.AddRange(new int[] {vertIndex + 0, vertIndex + 2, vertIndex + 3});
+	}
+
+	private static void AddConnectingTris(List<int> tris, int vertIndex)
+	{
+		tris.AddRange(new int[] {vertIndex + 0, vertIndex + 4, vertIndex + 5});
+		tris.AddRange(new int[] {vertIndex + 1, vertIndex + 0, vertIndex + 5});
+	}
+
+	public static (List<Vector3> vtc, List<int> tris) GenerateCircle(int res)
+	{
+		float d = 1f / res;
+
+		var vtc = new List<Vector3>();
+		vtc.Add(Vector3.zero); // Start with only center point
+		var tris = new List<int>();
+
+		// First pass => build vertices
+		for (int i = 0; i < res; ++i)
+		{
+			float angleStep = (Mathf.PI * 2f) / ((i + 1) * 6);
+			for (int point = 0; point < (i + 1) * 6; ++point)
+			{
+				vtc.Add(new Vector3(Mathf.Cos(angleStep * point), Mathf.Sin(angleStep * point), 0) * d * (i + 1));
+			}
+		}
+
+		static int GetPointIndex(int c, int x)
+		{
+			if (c < 0) return 0; // In case of center point
+			x = x % ((c + 1) * 6); // Make the point index circular
+			// Explanation: index = number of points in previous circles + central point + x
+			// hence: (0+1+2+...+c)*6+x+1 = ((c/2)*(c+1))*6+x+1 = 3*c*(c+1)+x+1
+
+			return (3 * c * (c + 1) + x + 1);
+		}
+
+
+		// Second pass => connect vertices into triangles
+		for (int circ = 0; circ < res; ++circ)
+		{
+			for (int point = 0, other = 0; point < (circ + 1) * 6; ++point)
+			{
+				if (point % (circ + 1) != 0)
+				{
+					// Create 2 triangles
+					tris.Add(GetPointIndex(circ - 1, other + 1));
+					tris.Add(GetPointIndex(circ - 1, other));
+					tris.Add(GetPointIndex(circ, point));
+					tris.Add(GetPointIndex(circ, point));
+					tris.Add(GetPointIndex(circ, point + 1));
+					tris.Add(GetPointIndex(circ - 1, other + 1));
+					++other;
+				}
+				else
+				{
+					// Create 1 inverse triangle
+					tris.Add(GetPointIndex(circ, point));
+					tris.Add(GetPointIndex(circ, point + 1));
+					tris.Add(GetPointIndex(circ - 1, other));
+					// Do not move to the next point in the smaller circle
+				}
+			}
+		}
+
+		return (vtc, tris);
+	}
+
+	private void CalcMesh3(Mesh mesh)
+	{
+		int numCircleVertices = 32;
+		(var vert, var circleTris) = GenerateCircle(4);
+		List<Vector3> circleVertices = vert;
+
+		// Combine the square and circle vertices into a single array
+		Vector3[] squareVertices = new Vector3[]
+		{
+			new Vector3(-1, 0, 1),
+			new Vector3(1, 0, 1),
+			new Vector3(1, 0, -1),
+			new Vector3(-1, 0, -1)
+		};
+		// Vector3[] vertices = new Vector3[squareVertices.Length + circleVertices.Count];
+		Vector3[] vertices = new Vector3[circleVertices.Count + squareVertices.Length];
+		squareVertices.CopyTo(vertices, 0);
+		circleVertices.CopyTo(vertices, squareVertices.Length);
+		// circleVertices.CopyTo(vertices, 0);
+
+		// Define the triangles that connect the vertices to form the mesh
+		List<int> triangles = new List<int>();
+		// Square triangles
+		triangles.Add(0);
+		triangles.Add(1);
+		triangles.Add(2);
+		triangles.Add(2);
+		triangles.Add(3);
+		triangles.Add(0);
+
+		triangles.AddRange(circleTris);
+
+		mesh.vertices = vertices;
+		mesh.triangles = triangles.ToArray();
+		mesh.RecalculateNormals();
+		mesh.RecalculateBounds();
+	}
+
+	private void CalcMesh2(Mesh mesh)
+	{
+		var widthOffset = widthX * 0.5f;
+		var heightOffset = heightY * 0.5f;
+		var lengthOffset = lengthZ * 0.5f;
+
+		var points = new Vector3[]
+		{
+			new Vector3(-widthOffset, heightOffset, -lengthOffset),
+			new Vector3(widthOffset, heightOffset, -lengthOffset),
+			new Vector3(widthOffset, -heightOffset, -lengthOffset),
+			new Vector3(-widthOffset, -heightOffset, -lengthOffset),
+			new Vector3(0, 0, lengthOffset)
+		};
+
+		mesh.vertices = new Vector3[]
+		{
+			points[0], points[1], points[2],
+			points[0], points[2], points[3],
+			points[0], points[1], points[4],
+			points[1], points[2], points[4],
+			points[2], points[3], points[4],
+			points[3], points[0], points[4]
+		};
+
+		mesh.triangles = new int[]
+		{
+			0, 1, 2,
+			3, 4, 5,
+			8, 7, 6,
+			11, 10, 9,
+			14, 13, 12,
+			17, 16, 15
+		};
+
+		mesh.RecalculateNormals();
+		mesh.RecalculateBounds();
+	}
+
+	void Start()
+	{
+	}
+
+	void Update()
+	{
+	}
+
+
+	void OnDestroy()
+	{
+		Destroy(meshFilter);
+		Transform meshObj = transform.Find("mesh");
+
+		try
+		{
+			Destroy(meshObj.gameObject);
+		}
+		catch (NullReferenceException e)
+		{
+			Debug.Log("MeshObj.GameObject already destroyed. This is normal.");
+		}
+	}
+}

@@ -1,0 +1,31 @@
+[gd_scene load_steps=5 format=3 uid="uid://lv2jd1v5c1wv"]
+
+[ext_resource type="Script" uid="uid://cgfcjo8seplbh" path="res://Scripts/Environment/Planet.cs" id="1_planet"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_1"]
+radius = 5.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
+albedo_color = Color(0.2, 0.5, 0.8, 1)
+roughness = 0.5
+
+[sub_resource type="SphereMesh" id="SphereMesh_1"]
+material = SubResource("StandardMaterial3D_1")
+radius = 5.0
+height = 10.0
+
+[node name="Planet" type="StaticBody3D"]
+script = ExtResource("1_planet")
+Radius = 15.0
+CloudDensity = 0.751
+SeaLevel = 0.44
+HasRings = true
+RingRadius = 5.0
+RingWidth = 0.25
+RingInclination = 0.0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape3D_1")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_1")

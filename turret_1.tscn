@@ -1,0 +1,64 @@
+[gd_scene load_steps=7 format=3 uid="uid://dy57w2ov77nxx"]
+
+[ext_resource type="PackedScene" uid="uid://k4p7au74exp3" path="res://models/turret_1.blend" id="1_tsctv"]
+[ext_resource type="Shader" uid="uid://t6xh7mlbgfrn" path="res://laser.gdshader" id="2_r0qvk"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_uuql5"]
+subdivide_width = 32
+subdivide_depth = 32
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_6me85"]
+render_priority = 0
+shader = ExtResource("2_r0qvk")
+shader_parameter/beams = 2
+shader_parameter/energy = 10.0
+shader_parameter/roughness = 5
+shader_parameter/frequency = 2
+shader_parameter/speed = 0.2
+shader_parameter/thickness = 0.055
+shader_parameter/outline_thickness = 0.1
+shader_parameter/beam_difference = 0.1
+shader_parameter/glow = 0.1
+shader_parameter/outline_glow = 0.1
+shader_parameter/color = Color(1, 0.870588, 0.215686, 1)
+shader_parameter/outline_color = Color(1, 0.254902, 0.239216, 1)
+shader_parameter/progress = 1.0
+shader_parameter/y_offset = -0.108
+shader_parameter/fixed_edge_size = 0.05
+shader_parameter/noise_scale = Vector2(1, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_wolf1"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_4jjbg"]
+render_priority = 0
+shader = ExtResource("2_r0qvk")
+shader_parameter/beams = 2
+shader_parameter/energy = 3.0
+shader_parameter/roughness = 3
+shader_parameter/frequency = 10
+shader_parameter/speed = 1.0
+shader_parameter/thickness = 0.006
+shader_parameter/outline_thickness = 0.03
+shader_parameter/beam_difference = 0.0
+shader_parameter/glow = 0.0
+shader_parameter/outline_glow = 0.0
+shader_parameter/color = Color(0.91, 1, 1, 1)
+shader_parameter/outline_color = Color(0.5, 1, 0.96, 1)
+shader_parameter/progress = 1.0
+shader_parameter/y_offset = 0.0
+shader_parameter/fixed_edge_size = 0.05
+shader_parameter/noise_scale = Vector2(1, 1)
+
+[node name="turret_1" instance=ExtResource("1_tsctv")]
+transform = Transform3D(-4.37114e-08, 3.48787e-16, 1, 3.48787e-16, 1, -3.48787e-16, -1, 3.48787e-16, -4.37114e-08, 0, 0, 0)
+
+[node name="LaserLine" type="MeshInstance3D" parent="." index="2"]
+transform = Transform3D(1, -1.50996e-07, -1.50996e-07, 1.50996e-07, 1, -3.48892e-16, 1.50996e-07, -2.24509e-14, 1, 2.08165e-12, 2.08165e-12, 2.08165e-12)
+mesh = SubResource("PlaneMesh_uuql5")
+skeleton = NodePath("")
+surface_material_override/0 = SubResource("ShaderMaterial_6me85")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." index="3"]
+transform = Transform3D(1, 0, 0, 0, 1, 1.12238e-23, 0, 1.12238e-23, 1, 3.98024, -1.38826e-15, 1.73982e-07)
+mesh = SubResource("PlaneMesh_wolf1")
+surface_material_override/0 = SubResource("ShaderMaterial_4jjbg")

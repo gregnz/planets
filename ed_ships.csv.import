@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://dvwtrr1bfnjgy"
+
+[deps]
+
+files=["res://ed_ships. Acc.translation", "res://ed_ships. Mass.translation", "res://ed_ships. Jump.translation", "res://ed_ships. Manuver.translation", "res://ed_ships. Speed.translation", "res://ed_ships. Boost.translation", "res://ed_ships. Armour.translation", "res://ed_ships. Shield.translation", "res://ed_ships. X.translation", "res://ed_ships. Cost.translation"]
+
+source_file="res://ed_ships.csv"
+dest_files=["res://ed_ships. Acc.translation", "res://ed_ships. Mass.translation", "res://ed_ships. Jump.translation", "res://ed_ships. Manuver.translation", "res://ed_ships. Speed.translation", "res://ed_ships. Boost.translation", "res://ed_ships. Armour.translation", "res://ed_ships. Shield.translation", "res://ed_ships. X.translation", "res://ed_ships. Cost.translation"]
+
+[params]
+
+compress=true
+delimiter=0

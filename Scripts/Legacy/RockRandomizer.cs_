@@ -1,0 +1,41 @@
+using System.Collections;
+using System.Collections.Generic;
+
+public class RockRandomizer
+{
+	public int seed = 37823787;
+	private Material mat;
+	private List<Vector3> vertices = new List<Vector3>();
+	private List<Vector3> doneVerts = new List<Vector3>();
+	private Vector3 center;
+
+
+	void Start()
+	{
+		Random.InitState(seed);
+		float offset = Random.Range(0, 20);
+
+		Mesh mesh = GetComponent<MeshFilter>().mesh;
+
+		for (int s = 0; s < mesh.vertices.Length; s++)
+		{
+			vertices.Add(mesh.vertices[s]);
+		}
+
+		center = GetComponent<Renderer>().bounds.center;
+
+		for (int v = 0; v < vertices.Count; v++)
+		{
+			Vector3 curVector = vertices[v];
+			// Vector3 changedVector = (curVector * (1 + Mathf.PerlinNoise((float)v / offset, (float)v / offset) / 10));
+			float planetRadius = 1f;
+			float elevation =  Mathf.PerlinNoise((float)v / offset, (float)v / offset);
+			Vector3 changedVector = curVector * planetRadius * (1 + elevation / 5);
+			vertices[v] = changedVector;
+		}
+
+		mesh.SetVertices(vertices);
+		mesh.RecalculateBounds();
+		mesh.RecalculateNormals();
+	}
+}

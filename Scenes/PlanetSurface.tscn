@@ -1,0 +1,38 @@
+[gd_scene load_steps=7 format=3 uid="uid://dvuruunu78kqt"]
+
+[ext_resource type="Script" uid="uid://bho6s63ay4itu" path="res://Scripts/Environment/PlanetSurface.cs" id="1_surface"]
+[ext_resource type="Script" uid="uid://dsu2uhl4d88s4" path="res://Scripts/Controllers/PlanetSceneController.cs" id="2_controller"]
+[ext_resource type="Script" uid="uid://hv5c6usif34f" path="res://Camera3D.gd" id="3_camera_script"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]
+sky_top_color = Color(0.384314, 0.454902, 0.54902, 1)
+sky_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
+
+[sub_resource type="Sky" id="Sky_1"]
+sky_material = SubResource("ProceduralSkyMaterial_1")
+
+[sub_resource type="Environment" id="Environment_1"]
+background_mode = 2
+sky = SubResource("Sky_1")
+tonemap_mode = 2
+glow_enabled = true
+
+[node name="PlanetSurfaceScene" type="Node3D"]
+script = ExtResource("2_controller")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.866025, -0.433013, 0.25, 0, 0.5, 0.866025, -0.5, 0.75, -0.433013, 0, 0, 0)
+shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_1")
+
+[node name="PlanetSurface" type="Node3D" parent="."]
+script = ExtResource("1_surface")
+Size = 200
+ScaleFactor = 0.4
+HeightScale = 5.0
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 50, 50)
+script = ExtResource("3_camera_script")

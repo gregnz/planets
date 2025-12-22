@@ -1,0 +1,132 @@
+// using System.Collections.Generic;
+// using UnityEngine;
+// using System;
+// using Random = UnityEngine.Random;
+// using Unity.MLAgents;
+// using Unity.MLAgents.Actuators;
+// using Unity.MLAgents.Sensors;
+// using UnityEngine.InputSystem;
+//
+// public class EnemyBehaviourAI : Agent
+// {
+//     public GameObject target;
+//     private float movementX;
+//     private float movementY;
+//     private Rigidbody rb;
+//     private ShipFactory.ShipSpec shipSpecification;
+//     private float lastDistanceToTarget;
+//
+//     private void Reset()
+//     {
+//         this.transform.position = new Vector3(50, 5.6f, 50);
+//         target.transform.position = new Vector3(0, 5.6f, 0);
+//         this.lastDistanceToTarget = (target.transform.position - gameObject.transform.position).magnitude;
+//         this.rb.angularVelocity = Vector3.zero;
+//         this.rb.velocity = Vector3.zero;
+//         this.transform.rotation = Quaternion.identity;
+//
+//     }
+//
+//     public override void OnEpisodeBegin()
+//     {
+//         this.rb = GetComponent<Rigidbody>();
+//         this.shipSpecification = GetComponent<EnemyController>().shipSpecification;
+//         this.shipSpecification = ShipFactory.GetPreset(ShipFactory.ShipType.HeavyFighter);
+//         Debug.Log("OnEpisodeBegin");
+//         Reset();
+//     }
+//
+//     public override void CollectObservations(VectorSensor sensor)
+//     {
+//         sensor.AddObservation(transform.localRotation.normalized);
+//         sensor.AddObservation(target.transform.localRotation.normalized);
+//         sensor.AddObservation(target.transform.rotation.normalized);
+//         sensor.AddObservation(target.transform.position);
+//     }
+//
+//     public override void Heuristic(in ActionBuffers actionsOut)
+//     {
+//         Debug.Log("Heuristic");
+//         var continuousActionsOut = actionsOut.ContinuousActions;
+//         continuousActionsOut[0] = movementX;
+//         continuousActionsOut[1] = movementY;
+//     }
+//
+//     public override void OnActionReceived(ActionBuffers actions)
+//     {
+//         var vectorAction = actions.ContinuousActions;
+//
+//         float yaw = vectorAction[0];
+//         float pitch = vectorAction[1];
+//         
+//         float yRot = 0;
+//         float zRot = 0;
+//
+//
+//         var v = Time.deltaTime * shipSpecification.rotateSpeed;
+//         if (yaw > 0)
+//         {
+//             yRot = v;
+//         }
+//         else if (yaw < 0)
+//         {
+//             yRot = -v;
+//         }
+//         
+//         transform.Rotate(0f, yRot, 0, Space.World);
+//         rb.AddForce(transform.forward * pitch * shipSpecification.acceleration, ForceMode.Acceleration);
+//         rb.velocity = new Vector3(rb.velocity.x, 0, rb.velocity.z);
+//
+//         float maxSpeed = shipSpecification.maxSpeed;
+//         rb.velocity = new Vector3(
+//             Mathf.Clamp(rb.velocity.x, -maxSpeed, maxSpeed),
+//             Mathf.Clamp(rb.velocity.y, -maxSpeed, maxSpeed),
+//             Mathf.Clamp(rb.velocity.z, -maxSpeed, maxSpeed));
+//
+//
+//         float distanceToTarget = (target.transform.position - gameObject.transform.position).magnitude;
+//         
+//        
+//         
+//         var rotAngle = Quaternion.Angle(transform.rotation, target.transform.rotation);
+//         
+//         //The reward for facing the target
+//         var facingRew = 0f;
+//         //If we are within 30 degrees of facing the target
+//         if (rotAngle < 30)
+//         {
+//             //Set normalized facingReward
+//             //Facing the target perfectly yields a reward of 1
+//             facingRew = 1 - (rotAngle / 180);
+//         }
+//         
+//         float IsFacingObject(Vector3 forward, Vector3 myPosition, Vector3 targetPosition)
+//         {
+//             // Check if the gaze is looking at the front side of the object
+//             Vector3 toOther = (targetPosition - myPosition).normalized;
+//
+//             return (Vector3.Dot(forward, toOther));
+//         }
+//
+//
+//         if (distanceToTarget < 5f)
+//         {
+//             SetReward(1f);
+//             EndEpisode();
+//         }
+//         // Debug.Log(rotAngle + " " + facingRew + " " + IsFacingObject(transform.forward, transform.position, target.transform.position));
+//         AddReward(IsFacingObject(transform.forward, transform.position, target.transform.position));
+//         
+//         if (distanceToTarget < lastDistanceToTarget)
+//         {
+//             AddReward(0.1f);
+//         }
+//         
+//         if (this.transform.position.x < -50 || Math.Abs(this.transform.position.magnitude) > 500)
+//         {
+//             SetReward(-1f);
+//             EndEpisode();
+//         }
+//         lastDistanceToTarget = distanceToTarget;
+//     }
+// }

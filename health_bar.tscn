@@ -1,0 +1,32 @@
+[gd_scene load_steps=3 format=3 uid="uid://bknx4dsgm2ddo"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_03lm1"]
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.317647, 0.0627451, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_u16xm"]
+bg_color = Color(0, 0.686275, 0, 1)
+
+[node name="Node2D" type="Node2D"]
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+offset_right = 170.0
+offset_bottom = 15.0
+size_flags_horizontal = 0
+
+[node name="ShieldBar" type="ProgressBar" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_03lm1")
+theme_override_styles/fill = SubResource("StyleBoxFlat_u16xm")
+value = 100.0
+show_percentage = false
+
+[node name="ArmourBar" type="ProgressBar" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_03lm1")
+theme_override_styles/fill = SubResource("StyleBoxFlat_u16xm")
+value = 100.0
+show_percentage = false

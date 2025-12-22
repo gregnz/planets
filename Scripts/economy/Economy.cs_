@@ -1,0 +1,935 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+namespace economy
+{
+	public class Good
+	{
+		public enum GoodType
+		{
+			WOOL,
+			TEXTILE,
+			WINE,
+			GRAPES,
+			MILK,
+			GRAIN,
+			FOOD,
+			NITRATES,
+			MEDICINE,
+			COAL,
+			STEEL,
+			ARMS
+		}
+
+		internal class Requirement
+		{
+			internal bool and;
+			internal int amount;
+
+			public Requirement(int v, bool and)
+			{
+				this.amount = v;
+				this.and = and;
+			}
+		}
+
+		public GoodType type;
+		internal Dictionary<GoodType, Requirement> reqs = new Dictionary<GoodType, Requirement>();
+		public float MinPrice;
+		public float MaxPrice;
+
+		public Good(GoodType v, float minPrice, float maxPrice)
+		{
+			this.type = v;
+			this.MinPrice = minPrice;
+			this.MaxPrice = maxPrice;
+		}
+
+		internal bool CanProduce(Dictionary<GoodType, float> rawMaterialStock)
+		{
+			bool reqsMet = true;
+			foreach (KeyValuePair<GoodType, Requirement> entry in reqs)
+			{
+				Debug.Log($"Looking for raw material:{entry.Key} to produce {type}: Amount found:{rawMaterialStock[entry.Key]}");
+				if (rawMaterialStock[entry.Key] >= entry.Value.amount)
+				{
+					if (entry.Value.and)
+						reqsMet &= true;
+					else
+						reqsMet |= true;
+				}
+				else if (entry.Value.and)
+				{
+					reqsMet = false;
+					break;
+				}
+				else
+					reqsMet = false;
+			}
+
+			return reqsMet;
+		}
+
+
+		/*
+		Required to make 1 resource
+		*/
+		internal void requires(Good good, int v, bool and = true)
+		{
+			this.reqs[good.type] = new Requirement(v, and);
+		}
+
+		public override string ToString()
+		{
+			return base.ToString() + ": " + this.type + ":";
+		}
+	}
+
+	class LedgerEntry
+	{
+		private Economy economy;
+
+		Producer producer;
+
+		// TransportController transport;
+		internal List<GoodChange> goodChanges;
+		internal State state = State.LOCKED;
+
+		internal enum State
+		{
+			ON_ORDER,
+			LOCKED
+		}
+
+		public LedgerEntry(List<GoodChange> goodChanges, State state = State.LOCKED)
+		{
+			this.goodChanges = goodChanges;
+			this.state = state;
+		}
+
+		public override string ToString()
+		{
+			return producer + " " + string.Join(",", goodChanges);
+		}
+	}
+
+	struct GoodChange
+	{
+		internal Good.GoodType good;
+		internal float amount;
+
+		public GoodChange(Good.GoodType key, float amount) : this()
+		{
+			this.good = key;
+			this.amount = amount;
+		}
+
+		public override string ToString()
+		{
+			return good + " " + amount;
+		}
+	}
+
+	public class Producer
+	{
+		public string name;
+		internal Good good;
+		private int amount; // Per 'tick'
+
+		internal Economy economy;
+		private Producer producer;
+
+		public Producer(string v, Good good, int v1)
+		{
+			this.name = v;
+			this.good = good;
+			this.amount = v1;
+		}
+
+		internal LedgerEntry Produce(Dictionary<Good.GoodType, float> rawMaterialStock)
+		{
+			List<GoodChange> goodChanges = new List<GoodChange>();
+			if (good.CanProduce(rawMaterialStock))
+			{
+				goodChanges.Add(new GoodChange(good.type, amount));
+
+
+				foreach (KeyValuePair<Good.GoodType, Good.Requirement> entry in good.reqs)
+				{
+					goodChanges.Add(new GoodChange(entry.Key, -entry.Value.amount));
+					Debug.Assert(rawMaterialStock[entry.Key] >= 0);
+					if (entry.Value.and == false) break; // If not a combined good, just use the first raw material available
+				}
+
+				return new LedgerEntry(goodChanges);
+			}
+
+			return null;
+		}
+
+		public override string ToString()
+		{
+			return name;
+		}
+	}
+
+	public class Economy
+	{
+		private Producer[] producerList;
+
+		internal Dictionary<int, List<LedgerEntry>> ledger = new();
+
+		internal Dictionary<Good.GoodType, float> rawMaterialStock = new();
+		internal Dictionary<Good.GoodType, float> alreadyBookedStock = new();
+		List<Good.GoodType> supply = new();
+		List<Good.GoodType> demand = new();
+
+		/*
+		 * Industry - 20%, 35%, 50% of goods value for small, medium, large industry. Grows by deliverying grapes 
+		 */
+		public static Dictionary<Good.GoodType, Good> goods = new()
+		{
+			{ Good.GoodType.WOOL, new Good(Good.GoodType.WOOL, 10000, 20000) },
+			{ Good.GoodType.TEXTILE, new Good(Good.GoodType.TEXTILE, 10000, 20000) },
+			{ Good.GoodType.WINE, new Good(Good.GoodType.WINE, 12000, 24000) },
+			{ Good.GoodType.GRAPES, new Good(Good.GoodType.GRAPES, 10000, 20000) },
+			{ Good.GoodType.FOOD, new Good(Good.GoodType.FOOD, 12000, 80000) },
+			{ Good.GoodType.MILK, new Good(Good.GoodType.MILK, 12000, 24000) },
+			{ Good.GoodType.GRAIN, new Good(Good.GoodType.GRAIN, 8000, 16000) },
+			{ Good.GoodType.NITRATES, new Good(Good.GoodType.NITRATES, 8000, 16000) },
+			{ Good.GoodType.MEDICINE, new Good(Good.GoodType.MEDICINE, 16000, 32000) },
+			{ Good.GoodType.COAL, new Good(Good.GoodType.COAL, 10000, 20000) },
+			{ Good.GoodType.STEEL, new Good(Good.GoodType.STEEL, 15000, 30000) },
+			{ Good.GoodType.ARMS, new Good(Good.GoodType.ARMS, 25000, 50000) },
+		};
+
+		static Economy()
+		{
+			// This should be somewhere
+			Good arms = goods[Good.GoodType.ARMS];
+			Good coal = goods[Good.GoodType.COAL];
+			Good steel = goods[Good.GoodType.STEEL];
+			arms.requires(steel, 2);
+			steel.requires(coal, 1);
+
+			Good wine = goods[Good.GoodType.WINE];
+			Good grape = goods[Good.GoodType.GRAPES];
+			wine.requires(grape, 2);
+
+			Good food = goods[Good.GoodType.FOOD];
+			Good milk = goods[Good.GoodType.MILK];
+			Good grain = goods[Good.GoodType.GRAIN];
+
+			food.requires(milk, 1, false);
+			food.requires(grain, 1, false);
+		}
+
+		public static Dictionary<string, Producer> producers = new()
+		{
+			{ "sheepfarm", new Producer("farm", goods[Good.GoodType.WOOL], 1) },
+			{ "grapefarm", new Producer("grapefarm", goods[Good.GoodType.GRAPES], 1) },
+			{ "winery", new Producer("winery", goods[Good.GoodType.WINE], 1) },
+			{ "grainfarm", new Producer("grainfarm", goods[Good.GoodType.GRAIN], 1) },
+			{ "dairyfarm", new Producer("dairyfarm", goods[Good.GoodType.MILK], 1) },
+			{ "foodfactory", new Producer("foodfactory", goods[Good.GoodType.FOOD], 10) },
+			{ "nitratemine", new Producer("nitratemine", goods[Good.GoodType.NITRATES], 1) },
+			{ "medicinefactory", new Producer("medicinefactory", goods[Good.GoodType.MEDICINE], 1) },
+			{ "coalmine", new Producer("coalmine", goods[Good.GoodType.COAL], 1) },
+			{ "steelmill", new Producer("steelmill", goods[Good.GoodType.STEEL], 2) },
+			{ "armfactory", new Producer("armfactory", goods[Good.GoodType.ARMS], 1) }
+		};
+
+		private readonly float population;
+		private int tickCount = 0;
+
+		/*
+		 * An economy has levels of demand, based on 'size' eg: population
+		 * It has levels of supply, which may be internal and external.
+		 *
+		 * So essentially for each good, it has a demand and supply curve.
+		 */
+		public Economy(Producer[] pl)
+		{
+			population = 1e6f;
+			producerList = pl;
+
+			// WHAT I PRODUCE
+			foreach (Producer p in producerList)
+				supply.Add(p.good.type);
+
+			// WHAT I NEED
+			demand.Add(Good.GoodType.FOOD);
+
+			foreach (Producer p in producerList)
+			{
+				foreach (Good.GoodType gr in p.good.reqs.Keys)
+				{
+					demand.Add(gr);
+				}
+			}
+
+			foreach (Good g in goods.Values)
+				rawMaterialStock[g.type] = 0;
+			foreach (Good g in goods.Values)
+				alreadyBookedStock[g.type] = 0;
+		}
+
+
+		internal void EconomyTick(int tickCnt)
+		{
+			this.tickCount = tickCnt;
+			var l = GetLedgerEntriesForTick();
+
+			// An economy has demand for each good - Dg
+			// An economy has a supply of each good - Sg from trade or _internal production_ (probably leave out, only traded goods count? What about food).
+			// Dg - Sg = surplus or shortage. Surplus lowers price. Surplus/shortage should be in terms of "length of supply". Lower length of supply = higher
+			// price, Longer length of supply = lower price.
+
+
+			foreach (Producer p in producerList)
+			{
+				LedgerEntry e = p.Produce(rawMaterialStock);
+				if (e != null)
+				{
+					l.Add(e);
+				}
+			}
+
+			// Internal consumption
+			foreach (Good.GoodType g in rawMaterialStock.Keys)
+			{
+				float internalDemand = GetInternalDemand(g);
+				if (internalDemand > 0 && rawMaterialStock[g] > 0)
+				{
+					LedgerEntry e = new LedgerEntry(new List<GoodChange>()
+					{
+						new GoodChange(g, -internalDemand)
+					});
+					l.Add(e);
+				}
+			}
+
+			UpdateStocks(this.ledger[tickCount]);
+		}
+
+		private List<LedgerEntry> GetLedgerEntriesForTick()
+		{
+			List<LedgerEntry> l;
+			this.ledger.TryGetValue(tickCount, out l);
+			if (l == null)
+			{
+				l = new List<LedgerEntry>();
+				this.ledger[tickCount] = l;
+			}
+
+			return l;
+		}
+
+		private float GetInternalDemand(Good.GoodType good)
+		{
+			// TODO: All goods should have a different internal demand
+			// TODO: This is also incorrect. This is not internal demand, it's whether I demand the good at all
+			// The internal demand value = "How much will I use up per tick"
+			// Some goods are used to produce others, while others (food) are just consumed.
+
+			if (good == Good.GoodType.FOOD && demand.Contains(good)) return population * 5e-7f;
+			if (demand.Contains(good)) return 1f;
+			return 0;
+		}
+
+		public void BookGoodsFromSupplier(Good.GoodType g, float quantity)
+		{
+			var l = GetLedgerEntriesForTick();
+			LedgerEntry e = new LedgerEntry(new List<GoodChange>()
+			{
+				new(g, quantity)
+			}, LedgerEntry.State.ON_ORDER);
+			l.Add(e);
+			UpdateStocksForSingleEntry(e);
+		}
+
+		public void OnOrderGoods(Good.GoodType g, float quantity)
+		{
+			var l = GetLedgerEntriesForTick();
+			LedgerEntry e = new LedgerEntry(new List<GoodChange>()
+			{
+				new(g, quantity)
+			}, LedgerEntry.State.ON_ORDER);
+			l.Add(e);
+			UpdateStocksForSingleEntry(e);
+		}
+
+
+		public void PickGoodsForTransport(Good.GoodType g, float quantity)
+		{
+			// Reverse the booked goods entry
+			BookGoodsFromSupplier(g, -quantity);
+
+			var l = GetLedgerEntriesForTick();
+			LedgerEntry e = new LedgerEntry(new List<GoodChange>() { new(g, -quantity) });
+			l.Add(e);
+			UpdateStocksForSingleEntry(e);
+		}
+
+		public void DeliverGoods(Good.GoodType g, float quantity)
+		{
+			// Reverse the ON_ORDER transaction from OnOrder
+			OnOrderGoods(g, -quantity);
+
+			var l = GetLedgerEntriesForTick();
+			LedgerEntry e = new LedgerEntry(new List<GoodChange>() { new(g, quantity) });
+			l.Add(e);
+			UpdateStocksForSingleEntry(e);
+		}
+
+		private void UpdateStocksForSingleEntry(LedgerEntry le)
+		{
+			if (le.state == LedgerEntry.State.LOCKED)
+				foreach (GoodChange g in le.goodChanges)
+				{
+					rawMaterialStock[g.good] += g.amount;
+					if (rawMaterialStock[g.good] < 0) rawMaterialStock[g.good] = 0;
+				}
+
+			if (le.state == LedgerEntry.State.ON_ORDER)
+			{
+				foreach (GoodChange g in le.goodChanges)
+				{
+					alreadyBookedStock[g.good] += g.amount;
+				}
+			}
+		}
+
+		private void UpdateStocks(List<LedgerEntry> ledgerEntries)
+		{
+			foreach (LedgerEntry le in ledgerEntries)
+			{
+				UpdateStocksForSingleEntry(le);
+			}
+		}
+
+		public string ProducerString()
+		{
+			String s = "";
+			foreach (Producer p in producerList)
+				s += p.name + "-";
+			return s;
+		}
+
+		internal string SummaryString()
+		{
+			String s = ProducerString() + "\n------------------\n";
+
+			foreach (Good.GoodType g in goods.Keys)
+			{
+				s += $"{g}: {rawMaterialStock[g]} ( {alreadyBookedStock[g]} booked) ${DemandPrice(g, rawMaterialStock[g] - alreadyBookedStock[g])}\n";
+			}
+
+			return s;
+		}
+
+		public Dictionary<Good.GoodType, float> DemandPrices()
+		{
+			Dictionary<Good.GoodType, float> rawMaterialPrices = new();
+			foreach (Good.GoodType g in rawMaterialStock.Keys)
+			{
+				rawMaterialPrices[g] = DemandPrice(g, rawMaterialStock[g] - alreadyBookedStock[g]);
+			}
+
+			return rawMaterialPrices;
+		}
+
+		private float DemandPrice(Good.GoodType good, float stock)
+		{
+			float MaxStockDays = 20; // TODO: DIfferent for each planet
+			var maxPrice = goods[good].MaxPrice;
+			var minPrice = goods[good].MinPrice;
+
+			if (!demand.Contains(good)) return float.NaN;
+			float stockDays = stock / GetInternalDemand(good);
+			float price = Mathf.Lerp(maxPrice, minPrice, stockDays / MaxStockDays);
+			return price;
+		}
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------------------------
+	// ------------------------------https://www.gamedeveloper.com/design/bazaarbot-an-open-source-economics-engine  -------------------------
+	// ---------------------------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------------------------
+
+/*
+	public class Agent
+	{
+		enum Type
+		{
+			BLACKSMITH,
+			FARMER,
+			MINER,
+			REFINER,
+			WOODCUTTER,
+		}
+
+		public int money;
+
+		private Type type;
+
+		private Market _market;
+		private Inventory _inventory;
+		private readonly Inventory _outputs;
+
+		public Agent()
+		{
+			this.type = Type.FARMER;
+			this._inventory = new Inventory();
+		}
+
+		public void Produce()
+		{
+			this._inventory.add(new Good(Good.GoodType.FOOD), 2);
+		}
+
+		public void Consume()
+		{
+			this._inventory.add(new Good(Good.GoodType.FOOD), -1);
+		}
+
+		public void Buy()
+		{
+		}
+
+		public void Sell()
+		{
+		}
+
+		public void DecideProduction()
+		{
+		}
+
+		public void init()
+		{
+			var listGoods = _market.getGoods();
+			for (str in listGoods)
+			{
+				var trades:
+				Array < Float > = new Array<Float>();
+				var price:
+				Float = market.getAverageHistoricalPrice(str, _lookback);
+				trades.push(price * 0.5);
+				trades.push(price * 1.5); //push two fake trades to generate a range
+			}
+			//set initial price belief & observed trading range
+			_observedTradingRange.set(str, trades);
+			_priceBeliefs.set(str, new Point(price * 0.5, price * 1.5));
+		}
+
+		private float determineSaleQuantity(Market market, Good good)
+		{
+			int _lookback = 15;
+			float mean = market.getAverageHistoricalPrice(good, _lookback);
+			(float, float) tradingRange = observeTradingRange(good);
+
+			if (tradingRange != null)
+			{
+				float favorability = Quick.positionInRange(mean, tradingRange.x, tradingRange.y);
+
+				float amount_to_sell = Mathf.Round(favorability * _inventory.surplus(good));
+				if (amount_to_sell < 1)
+				{
+					amount_to_sell = 1;
+				}
+
+				return amount_to_sell;
+			}
+
+			return 0;
+		}
+
+
+		private float determinePurchaseQuantity(Market market, Good good)
+		{
+			float mean = market.getAverageHistoricalPrice(good_, _lookback);
+			(float, float) tradingRange = observeTradingRange(commodity_);
+
+			if (trading_range != null)
+			{
+				float favorability = Quick.positionInRange(mean, tradingRange.x, tradingRange.y);
+				favorability = 1 - favorability;
+
+				float amount_to_buy = Mathf.Round(favorability * _inventory.surplus(commodity_));
+				if (amount_to_buy < 1)
+				{
+					amount_to_buy = 1;
+				}
+
+				return amount_to_buy;
+			}
+
+			return 0;
+		}
+
+
+		public void ChangeInventory(Good good, float f)
+		{
+			this._inventory[good] += f;
+		}
+
+		public void updatePriceModel(Market market, String act, Good good, bool success, float unitPrice)
+		{
+			float[] observed_trades;
+
+			if (success)
+			{
+				//Add this to my list of observed trades
+				observed_trades = _observedTradingRange.get(good);
+				observed_trades.Append(unitPrice);
+			}
+
+			float public_mean_price = market.getAverageHistoricalPrice(good, 1);
+
+			(float, float) belief = getPriceBelief(good);
+			float mean = (belief.x + belief.y) / 2;
+			float wobble = 0.05;
+
+			float delta_to_mean = mean - public_mean_price;
+
+			if (success)
+			{
+				if (act == "buy" && delta_to_mean > SIGNIFICANT) //overpaid
+				{
+					belief.Item1 -= delta_to_mean / 2; //SHIFT towards mean
+					belief.Item2 -= delta_to_mean / 2;
+				}
+				else if (act == "sell" && delta_to_mean < -SIGNIFICANT) //undersold
+				{
+					belief.Item1 -= delta_to_mean / 2; //SHIFT towards mean
+					belief.Item2 -= delta_to_mean / 2;
+				}
+
+				belief.Item1 += wobble * mean; //increase the belief's certainty
+				belief.Item2 -= wobble * mean;
+			}
+			else
+			{
+				belief.Item1 -= delta_to_mean / 2; //SHIFT towards the mean
+				belief.Item2 -= delta_to_mean / 2;
+
+				var special_case:
+				Bool = false;
+				var stocks:
+				Float = queryInventory(good);
+				var ideal:
+				Float = _inventory.ideal(good);
+
+				if (act == "buy" && stocks < LOW_INVENTORY * ideal)
+				{
+					//very low on inventory AND can't buy
+					wobble *= 2; //bid more liberally
+					special_case = true;
+				}
+				else if (act == "sell" && stocks > HIGH_INVENTORY * ideal)
+				{
+					//very high on inventory AND can't sell
+					wobble *= 2; //ask more liberally
+					special_case = true;
+				}
+
+				if (!special_case)
+				{
+					//Don't know what else to do? Check supply vs. demand
+					var asks:
+					Float = bazaar.history.asks.average(good, 1);
+					var bids:
+					Float = bazaar.history.bids.average(good, 1);
+
+					//supply_vs_demand: 0=balance, 1=all supply, -1=all demand
+					var supply_vs_demand:
+					Float = (asks - bids) / (asks + bids);
+
+					//too much supply, or too much demand
+					if (supply_vs_demand > SIG_IMBALANCE || supply_vs_demand < -SIG_IMBALANCE)
+					{
+						//too much supply: lower price
+						//too much demand: raise price
+
+						var new_mean = public_mean_price * (1 - supply_vs_demand);
+						delta_to_mean = mean - new_mean;
+
+						belief.x -= delta_to_mean / 2; //SHIFT towards anticipated new mean
+						belief.y -= delta_to_mean / 2;
+					}
+				}
+
+				belief.x -= wobble * mean; //decrease the belief's certainty
+				belief.y += wobble * mean;
+			}
+
+			if (belief.x < MIN_PRICE)
+			{
+				belief.x = MIN_PRICE;
+			}
+			else if (belief.y < MIN_PRICE)
+			{
+				belief.y = MIN_PRICE;
+			}
+		}
+	}
+
+
+	public class Market
+	{
+		private class History
+		{
+		}
+
+		private class BidBook
+		{
+			public Dictionary<Good.GoodType, List<Offer>> bids = new Dictionary<Good.GoodType, List<Offer>>();
+			public Dictionary<Good.GoodType, List<Offer>> asks = new Dictionary<Good.GoodType, List<Offer>>();
+		}
+
+		private BidBook _book;
+		private History _history;
+		private List<Good> goods;
+
+		private void resolveOffers(Good good)
+		{
+			List<Offer> bids = _book.bids[good.type];
+			List<Offer> asks = _book.asks[good.type];
+
+			bids.Sort((x, y) => x.unit_price.CompareTo(y.unit_price));
+			asks.Sort((x, y) => y.unit_price.CompareTo(x.unit_price));
+			Debug.Log(bids);
+			Debug.Log(asks);
+
+			int successfulTrades = 0;
+			int moneyTraded = 0;
+			int unitsTraded = 0;
+			int avgPrice = 0;
+			int numAsks = 0;
+			int numBids = 0;
+
+			for (int i = 0; i < bids.Count; i++)
+			{
+				numBids += bids[i].units;
+			}
+
+			for (i = 0; i < asks.Count; i++)
+			{
+				numAsks += asks[i].units;
+			}
+
+			//march through and try to clear orders
+			while (bids.Count > 0 && asks.Count > 0) //while both books are non-empty
+			{
+				Offer buyer = bids[0];
+				Offer seller = asks[0];
+
+				int quantity_traded = Mathf.min(seller.units, buyer.units);
+				float clearing_price = Quick.avgf(seller.unit_price, buyer.unit_price);
+
+				if (quantity_traded > 0)
+				{
+					//transfer the goods for the agreed price
+					seller.units -= quantity_traded;
+					buyer.units -= quantity_traded;
+
+					transferGood(good, quantity_traded, seller.agent_id, buyer.agent_id);
+					transferMoney(quantity_traded * clearing_price, seller.agent_id, buyer.agent_id);
+
+					//update agent price beliefs based on successful transaction
+					Agent buyer_a = _agents[buyer.agent_id];
+					Agent seller_a = _agents[seller.agent_id];
+					buyer_a.updatePriceModel(this, "buy", good, true, clearing_price);
+					seller_a.updatePriceModel(this, "sell", good, true, clearing_price);
+
+					//log the stats
+					moneyTraded += (quantity_traded * clearing_price);
+					unitsTraded += quantity_traded;
+					successfulTrades++;
+				}
+
+				if (seller.units == 0) //seller is out of offered good
+				{
+					asks.splice(0, 1); //remove ask
+					failsafe = 0;
+				}
+
+				if (buyer.units == 0) //buyer is out of offered good
+				{
+					bids.splice(0, 1); //remove bid
+					failsafe = 0;
+				}
+
+				failsafe++;
+
+				if (failsafe > 1000)
+				{
+					trace("BOINK!");
+				}
+			}
+
+			//reject all remaining offers,
+			//update price belief models based on unsuccessful transaction
+			while (bids.length > 0)
+			{
+				var buyer;
+				Offer = bids[0];
+				var buyer_a;
+				BasicAgent = _agents[buyer.agent_id];
+				buyer_a.updatePriceModel(this, "buy", good, false);
+				bids.splice(0, 1);
+			}
+
+			while (asks.length > 0)
+			{
+				var seller:
+				Offer = asks[0];
+				var seller_a:
+				BasicAgent = _agents[seller.agent_id];
+				seller_a.updatePriceModel(this, "sell", good, false);
+				asks.splice(0, 1);
+			}
+
+			//update history
+
+			history.asks.add(good, numAsks);
+			history.bids.add(good, numBids);
+			history.trades.add(good, unitsTraded);
+
+			if (unitsTraded > 0)
+			{
+				avgPrice = moneyTraded / cast(unitsTraded, Float);
+				history.prices.add(good, avgPrice);
+			}
+			else
+			{
+				//special case: none were traded this round, use last round's average price
+				history.prices.add(good, history.prices.average(good, 1));
+				avgPrice = history.prices.average(good, 1);
+			}
+
+			_agents.sort(Quick.sortAgentAlpha);
+
+			String curr_class = "";
+			var last_class:
+			String = "";
+			var list:
+			Array < Float > = null;
+			var avg_profit:
+			Float = 0;
+
+			for (int i = 0; i < _agents.length; i++)
+			{
+				Agent a = _agents[i]; //get current agent
+				curr_class = a.className; //check its class
+				if (curr_class != last_class) //new class?
+				{
+					if (list != null) //do we have a list built up?
+					{
+						//log last class' profit
+						history.profit.add(last_class, Quick.listAvgf(list));
+					}
+
+					list =  []
+					; //make a new list
+					last_class = curr_class;
+				}
+
+				list.push(a.profit); //push profit onto list
+			}
+
+			//add the last class too
+			history.profit.add(last_class, Quick.listAvgf(list));
+
+			//sort by id so everything works again
+			_agents.sort(Quick.sortAgentId);
+		}
+
+		private void transferGood(Good good, float units, Agent seller, Agent buyer)
+		{
+			seller.ChangeInventory(good, -units);
+			buyer.ChangeInventory(good, units);
+		}
+
+		private void transferMoney(Good good, float units, Agent seller, Agent buyer)
+		{
+			seller.money += amount;
+			buyer.money -= amount;
+		}
+
+		public float getAverageHistoricalPrice(Good good, int lookback)
+		{
+			history
+		}
+
+		public List<Good> getGoods()
+		{
+			return goods;
+		}
+	}
+
+
+	public class Inventory
+	{
+		private readonly Dictionary<Good.GoodType, float> dict;
+
+		public Inventory()
+		{
+			this.dict = new Dictionary<Good.GoodType, float> { { Good.GoodType.FOOD, 1 } };
+		}
+
+		public void add(Good good, int i)
+		{
+			float count = this.dict[good.type];
+			float newCount = Mathf.Clamp(i + count, 0, 100);
+			this.dict.Add(good.type, newCount);
+		}
+
+		public float this[Good good]
+		{
+			get { return dict[good.type]; }
+			set { throw new System.NotImplementedException(); }
+		}
+	}
+
+
+	public class Offer
+	{
+		public Good good;
+		public int units;
+		public float unit_price;
+		public int agent_id;
+
+		public Offer(Good good, int units, float unitPrice, int agentID)
+		{
+			this.good = good;
+			this.units = units;
+			unit_price = unitPrice;
+			agent_id = agentID;
+		}
+
+		public String toString()
+		{
+			return "(" + agent_id + "): " + good + "x " + units + " @ " + unit_price;
+		}
+
+		private void transferGood(Good good, int units, Agent seller, Agent buyer)
+		{
+			seller.ChangeInventory(good, -units);
+			buyer.ChangeInventory(good, units);
+		}
+
+		private void transferMoney(int amount, Agent seller, Agent buyer)
+		{
+			seller.money += amount;
+			buyer.money -= amount;
+		}
+	}
+	*/
+}
