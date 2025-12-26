@@ -13,12 +13,12 @@ public partial class Shield : Node3D
     private float[] _vaporizeTimers = new float[] { 0f, 0f, 0f, 0f };
     private bool[] _isVaporising = new bool[] { false, false, false, false };
     private const float VAPORIZE_DURATION = 1.0f;
-    
+
     // Quadrant strength tracking (0-100 percentage)
     private float[] _quadrantStrengths = new float[] { 100f, 100f, 100f, 100f };
 
     private Color _baseColor = new Color(0.0f, 0.4f, 1.0f, 0.05f);
-    
+
     /// <summary>
     /// Check if the shield quadrant at a given global hit position is active (has health).
     /// Used by weapons to determine if a shield hit should be processed.
@@ -28,18 +28,19 @@ public partial class Shield : Node3D
         Vector3 localHit = ToLocal(globalHitPoint);
         int quadrant = GetQuadrantFromLocalPos(localHit);
         float strength = _quadrantStrengths[quadrant];
-        
+
         // Debug logging to diagnose why depleted shields might still be hit
         GD.Print($"Shield Hit Check: Global={globalHitPoint} Local={localHit} Quadrant={quadrant} Strength={strength}");
         // Temporary debug
         if (strength <= 0)
         {
-             GD.Print($"Shield Hit Check: QUADRANT DEPLETED but checked? Global={globalHitPoint} Local={localHit} Quadrant={quadrant} Strength={strength}");
+            GD.Print(
+                $"Shield Hit Check: QUADRANT DEPLETED but checked? Global={globalHitPoint} Local={localHit} Quadrant={quadrant} Strength={strength}");
         }
-        
+
         return strength > 0;
     }
-    
+
     /// <summary>
     /// Determines which quadrant (0=Front, 1=Back, 2=Left, 3=Right) a local position belongs to.
     /// Uses same logic as shader for consistency.
@@ -48,7 +49,7 @@ public partial class Shield : Node3D
     {
         float absX = Mathf.Abs(localPos.X);
         float absZ = Mathf.Abs(localPos.Z);
-        
+
         if (absZ >= absX)
             return localPos.Z < 0 ? 0 : 1; // -Z = FRONT, +Z = BACK
         else
@@ -197,9 +198,9 @@ public partial class Shield : Node3D
         if (active)
         {
             if (!Visible)
-                Visible = true;
+                SetDeferred(PropertyName.Visible, true);
             if (_collisionShape != null)
-                _collisionShape.Disabled = false;
+                _collisionShape.SetDeferred(CollisionShape3D.PropertyName.Disabled, false);
         }
         else
         {
@@ -212,12 +213,12 @@ public partial class Shield : Node3D
 
             if (!anyVap)
             {
-                Visible = false;
+                SetDeferred(PropertyName.Visible, false);
             }
 
             // Collision ALWAYS OFF immediately if inactive
             if (_collisionShape != null)
-                _collisionShape.Disabled = true;
+                _collisionShape.SetDeferred(CollisionShape3D.PropertyName.Disabled, true);
         }
     }
 
@@ -230,6 +231,7 @@ public partial class Shield : Node3D
                 return rb;
             n = n.GetParent();
         }
+
         return null;
     }
 
@@ -256,7 +258,7 @@ public partial class Shield : Node3D
         _quadrantStrengths[1] = back;
         _quadrantStrengths[2] = left;
         _quadrantStrengths[3] = right;
-        
+
         if (_material != null)
         {
             // Normalize healths to 1.0 (assuming input is percentage 0-100)

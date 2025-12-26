@@ -29,7 +29,12 @@ public class ShipController
             if (Armor == null || Armor.maxStrength == null) return 1.0f;
             float current = 0;
             float max = 0;
-            for(int i=0; i<Armor.strength.Length; i++) { current += Armor.strength[i]; max += Armor.maxStrength[i]; }
+            for (int i = 0; i < Armor.strength.Length; i++)
+            {
+                current += Armor.strength[i];
+                max += Armor.maxStrength[i];
+            }
+
             return max > 0 ? current / max : 0f;
         }
     }
@@ -51,6 +56,9 @@ public class ShipController
     float baseTargetSpeed;
     public float currentSpeed;
     private float currentBankAngle = 0.0f;
+
+    public bool InWarp = false;
+    public const float WarpSpeed = 5000.0f;
 
 
     [ExportGroup("Banking Control (Optional)")] [Export]
@@ -92,16 +100,79 @@ public class ShipController
             Rb = rb;
             // Enforce 2D rotation constraints to prevent tumbling
             Rb.AxisLockAngularX = true;
-            Rb.AxisLockAngularZ = true; 
+            Rb.AxisLockAngularZ = true;
         }
+
         spec = shipSpecification;
         Shield = new ShieldSpec(spec.shield); // copy from ship spec
         Armor = new ArmorSpec(spec.armor); // copy from ship spec
         this.fireSystem = fireSystem;
+        AnalyzeWeaponCapabilities();
+    }
+
+    public struct WeaponCapabilities
+    {
+        public bool HasFixedWeapons;
+        public bool HasTurrets;
+        public bool HasMissiles;
+        public bool HasPointDefence;
+        public float MaxRange;
+        public float MinRange; // E.g. don't get closer than this if possible
+    }
+
+    public WeaponCapabilities Capabilities { get; private set; }
+
+    public void AnalyzeWeaponCapabilities()
+    {
+        Capabilities = new WeaponCapabilities();
+        float maxRange = 0f;
+        float minRange = float.MaxValue;
+        bool hasFixed = false;
+        bool hasTurrets = false;
+        bool hasMissiles = false;
+        bool hasPD = false;
+
+        foreach (var hpSpec in spec.shipsWeapons)
+        {
+            if (hpSpec.MaxRange > maxRange) maxRange = hpSpec.MaxRange;
+            if (hpSpec.MinRange < minRange) minRange = hpSpec.MinRange;
+
+            if (hpSpec is HardpointSpec.PointDefence)
+            {
+                hasPD = true;
+                continue;
+            }
+
+            if (hpSpec is HardpointSpec.Missile)
+            {
+                hasMissiles = true;
+            }
+            else if (hpSpec.isTurret)
+            {
+                hasTurrets = true;
+            }
+            else
+            {
+                hasFixed = true;
+            }
+        }
+
+        // Finalize struct (cannot modify struct properties directly after creation if not a variable)
+        var caps = new WeaponCapabilities();
+        caps.HasFixedWeapons = hasFixed;
+        caps.HasTurrets = hasTurrets;
+        caps.HasMissiles = hasMissiles;
+        caps.HasPointDefence = hasPD;
+        caps.MaxRange = maxRange;
+        caps.MinRange = (minRange == float.MaxValue) ? 0 : minRange;
+
+        Capabilities = caps;
+
+        // GD.Print($"{spec.name} Capabilities: Fixed={hasFixed} Turrets={hasTurrets} Missiles={hasMissiles} Range={maxRange}");
     }
 
     public Godot.Collections.Dictionary ToUIDict()
-    {   
+    {
         var myDict = new Godot.Collections.Dictionary();
         myDict["name"] = spec.name;
         myDict["acceleration"] = spec.acceleration;
@@ -122,7 +193,7 @@ public class ShipController
     {
         float absX = Mathf.Abs(localPos.X);
         float absZ = Mathf.Abs(localPos.Z);
-        
+
         if (absZ >= absX)
             return localPos.Z < 0 ? 0 : 1; // -Z = FRONT, +Z = BACK
         else
@@ -139,9 +210,10 @@ public class ShipController
             Vector3 localHit = Rb.ToLocal(hitPosition);
             int quadrant = GetQuadrantFromLocalPos(localHit);
             damageDir = (DamageDirection)quadrant;
-            
-            GD.Print($"ShipController Damage: HitPos={hitPosition} Local={localHit} Quadrant={quadrant} ({damageDir}) ShieldStr={Shield.strength[quadrant]}");
-            
+
+            // GD.Print(
+            //     $"ShipController Damage: HitPos={hitPosition} Local={localHit} Quadrant={quadrant} ({damageDir}) ShieldStr={Shield.strength[quadrant]}");
+
             // Trigger visual if shield is up in this quadrant
             if (Shield.strength[quadrant] > 0)
             {
@@ -183,7 +255,8 @@ public class ShipController
         int quadrant = GetQuadrantFromLocalPos(localHit);
         DamageDirection damageDir = (DamageDirection)quadrant;
 
-        GD.Print($"ShipController Damage(Hardpoint): HitPos={hit} Local={localHit} Quadrant={quadrant} ({damageDir}) ShieldStr={Shield.strength[quadrant]}");
+        // GD.Print(
+        //     $"ShipController Damage(Hardpoint): HitPos={hit} Local={localHit} Quadrant={quadrant} ({damageDir}) ShieldStr={Shield.strength[quadrant]}");
 
         // Trigger visual if shield is up in this quadrant
         if (Shield.strength[quadrant] > 0)
@@ -208,9 +281,9 @@ public class ShipController
     {
         LastHitTime = Time.GetTicksMsec() / 1000.0;
         int damageSide = (int)Convert.ChangeType(damageDir, damageDir.GetTypeCode());
-        
+
         float residualDamage;
-        
+
         // Check if this shield quadrant is already depleted - bypass to armor
         if (Shield.strength[damageSide] <= 0)
         {
@@ -220,12 +293,12 @@ public class ShipController
         {
             residualDamage = Shield.Deplete(damageSide, damage);
         }
-        
+
         // Update visuals
         if (_shieldVisuals != null)
         {
-             var strengths = Shield.GetStrengthPercents();
-             _shieldVisuals.UpdateShieldStrengths(strengths[0], strengths[1], strengths[2], strengths[3]); 
+            var strengths = Shield.GetStrengthPercents();
+            _shieldVisuals.UpdateShieldStrengths(strengths[0], strengths[1], strengths[2], strengths[3]);
         }
 
         if (residualDamage < 0)
@@ -243,7 +316,6 @@ public class ShipController
 
     private void Destroy()
     {
-        Debug.Print("DESTROYING");
         ship.Destroy();
     }
 
@@ -255,47 +327,63 @@ public class ShipController
     internal void HandleMovement(ShipFactory.ShipSpec spec, RigidBody3D rb, double delta, bool dbg, bool isNpc)
     {
         time += delta;
-        float maxSpeed = spec.maxSpeed;
+        float maxSpeed = InWarp ? WarpSpeed : spec.maxSpeed;
         float radsPerSecond = spec.rotateSpeed;
         float radius = rb.LinearVelocity.Length() / radsPerSecond;
         // if (MovementX > 0.01f) MovementX = 1;
         // else if (MovementX < -0.01f) MovementX = -1;
         // else MovementX = 0;
 
-        var acc = MovementY * (spec.acceleration * (boosting ? boostCoefficient : 1f));
+        // Forward Thrust Only (No Reversing)
+        float throttle = Math.Max(0, MovementY);
+
+        // Disable thrust when overheated
+        if (fireSystem?.IsOverheated == true)
+        {
+            throttle = 0;
+        }
+
+        var acc = throttle * (spec.acceleration * (boosting ? boostCoefficient : 1f));
+
+        // Massive boost for Warp
+        if (InWarp) acc *= 5.0f;
 
         Transform3D rbTransform = rb.Transform;
         Vector3 fce = -rbTransform.Basis.Z.Normalized() * rb.Mass * acc * 10;
         rb.ApplyForce(fce);
-        
-        float KE = .5f * rb.Mass * rb.LinearVelocity.Length() * rb.LinearVelocity.Length();
-        float breakingForce = rb.Mass * spec.acceleration;
-        float stoppingTime = KE / breakingForce;
-        float stoppingDistance = (rb.LinearVelocity.Length() * rb.LinearVelocity.Length()) / (2 * this.spec.acceleration);
-        if (!isNpc && false)
 
-            Debug.Print(
-                $"Fce:{VP(fce)} Speed {rb.LinearVelocity.Length():F2} KE:{KE:F2} stopDist: {stoppingDistance:F2}  Stopping time:{stoppingTime}");
-
-
-        if (Math.Abs(MovementY) < 0.1f)
+        // Drag / Airbrakes logic
+        // If not thrusting forward (coasting or braking), apply drag
+        if (MovementY < 0.1f && !InWarp)
         {
+            float useDragCoeff = dragCoefficient;
+            // If input is negative, deploy "Airbrakes" (High Drag)
+            if (MovementY < -0.1f)
+            {
+                useDragCoeff *= 10.0f;
+            }
+
             // GD: Insight: Masses in motion have kinetic energy (proportional to mass). Drag is a force that depletes that KE which is
             // not proportional to mass.
             // {F_{D}\,=\,{\tfrac {1}{2}}\,\rho \,v^{2}\,C_{D}\,A}
-            CalcDrag(-rb.LinearVelocity, spec.CrossSectionalArea, rb.LinearVelocity.Length(), dragCoefficient, out var dragForce);
+            CalcDrag(-rb.LinearVelocity, spec.CrossSectionalArea, rb.LinearVelocity.Length(), useDragCoeff,
+                out var dragForce);
             // Debug.Print(
-                // $"Drag force player: {Util.VP(rb.LinearVelocity)}{Util.VP(dragForce)} {spec.CrossSectionalArea} {rb.LinearVelocity.Length()} {dragForce.Length()}");
+            // $"Drag force player: {Util.VP(rb.LinearVelocity)}{Util.VP(dragForce)} {spec.CrossSectionalArea} {rb.LinearVelocity.Length()} {dragForce.Length()}");
             rb.ApplyForce(dragForce);
         }
 
 
-        var rightVel = rb.GlobalTransform.Basis.X * rb.LinearVelocity.Dot(rb.GlobalTransform.Basis.X);
-        DebugDraw3D.DrawLine(rb.Position, rb.Position + rightVel, Colors.Green);
-        // This is interesting. Drag (above) will "drag" on the sideways component of linear velocity.
-        // This will add an additional sideways drag component, operating at 'right'.
-        CalcDrag(-rightVel, spec.CrossSectionalArea, rb.LinearVelocity.Length(), dragCoefficient, out var sideDragForce);
-        rb.ApplyForce(sideDragForce);
+        if (!InWarp)
+        {
+            var rightVel = rb.GlobalTransform.Basis.X * rb.LinearVelocity.Dot(rb.GlobalTransform.Basis.X);
+            DebugDraw3D.DrawLine(rb.Position, rb.Position + rightVel, Colors.Green);
+            // This is interesting. Drag (above) will "drag" on the sideways component of linear velocity.
+            // This will add an additional sideways drag component, operating at 'right'.
+            CalcDrag(-rightVel, spec.CrossSectionalArea, rb.LinearVelocity.Length(), dragCoefficient,
+                out var sideDragForce);
+            rb.ApplyForce(sideDragForce);
+        }
 
 
         // Calculate torque to reach target speed against drag
@@ -304,15 +392,18 @@ public class ShipController
         // Drag = w * Mass * dragCoeff
         // w_max = rotationChange / dragCoeff
         // We want w_max to be a bit higher than spec.rotateSpeed for responsiveness (e.g. 5x)
-        float overdrive = 5.0f;
+        float overdrive = 1.0f;
         float rotationChange = spec.rotateSpeed * -MovementX * angularDragCoefficient * overdrive;
         rb.ApplyTorque(rb.Transform.Basis.Y * rotationChange * rb.Mass);
 
         float brakingMultiplier = 1.0f;
         if (Mathf.Abs(MovementX) < 0.05f)
         {
-             brakingMultiplier = 10.0f; // Active braking when not steering
+            brakingMultiplier = 10.0f; // Active braking when not steering
         }
+
+        // Massive rotational dampening during warp to prevent "spinning top" effect
+        if (InWarp) brakingMultiplier = 20.0f;
 
         Vector3 angularDragForce = -rb.AngularVelocity * rb.Mass * angularDragCoefficient * brakingMultiplier;
         rb.ApplyTorque(angularDragForce);
@@ -322,7 +413,8 @@ public class ShipController
         ApplyCosmeticBank(rb, rb.Basis, rb.LinearVelocity, rb.AngularVelocity, (float)delta);
     }
 
-    private void ApplyCosmeticBank(RigidBody3D rb, Basis currentBasis, Vector3 currentVel, Vector3 currentAngularVel, float delta)
+    private void ApplyCosmeticBank(RigidBody3D rb, Basis currentBasis, Vector3 currentVel, Vector3 currentAngularVel,
+        float delta)
     {
         Node3D VisualsNode = rb.GetChild(0) as Node3D;
         float targetBankAngleRad = 0f;
@@ -332,7 +424,8 @@ public class ShipController
         // Option 1: Based on Lateral Velocity
         Vector3 localVelocity = currentBasis.Inverse() * currentVel;
         float lateralVelX = localVelocity.X; // Sideways slide relative to ship's right
-        targetBankAngleRad = -lateralVelX * BankFactorLateralVel * 0.1f; // Negative = bank left when sliding right. Tune multiplier.
+        targetBankAngleRad =
+            -lateralVelX * BankFactorLateralVel * 0.1f; // Negative = bank left when sliding right. Tune multiplier.
 
         // Option 2: Based on Yaw Rate (Uncomment to use instead or combine)
         float yawRate = currentAngularVel.Y;

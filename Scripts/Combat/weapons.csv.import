@@ -1,0 +1,17 @@
+[remap]
+
+importer="csv_translation"
+type="Translation"
+uid="uid://bcrr5jvjjvy07"
+
+[deps]
+
+files=["res://Scripts/Combat/weapons.Category.translation", "res://Scripts/Combat/weapons.Type.translation", "res://Scripts/Combat/weapons.Subtype.translation", "res://Scripts/Combat/weapons.BonusA.translation", "res://Scripts/Combat/weapons.BonusB.translation", "res://Scripts/Combat/weapons.MinRange.translation", "res://Scripts/Combat/weapons.MaxRange.translation", "res://Scripts/Combat/weapons.AmmoCategory.translation", "res://Scripts/Combat/weapons.StartAmmoCapacity.translation", "res://Scripts/Combat/weapons.HeatGenerated.translation", "res://Scripts/Combat/weapons.Damage.translation", "res://Scripts/Combat/weapons.OverheatedDamageMultiplier.translation", "res://Scripts/Combat/weapons.EvasiveDamageMultiplier.translation", "res://Scripts/Combat/weapons.EvasivePipsIgnored.translation", "res://Scripts/Combat/weapons.DamageVariance.translation", "res://Scripts/Combat/weapons.HeatDamage.translation", "res://Scripts/Combat/weapons.AccuracyModifier.translation", "res://Scripts/Combat/weapons.CriticalChanceMultiplier.translation", "res://Scripts/Combat/weapons.IndirectFireCapable.translation", "res://Scripts/Combat/weapons.RefireModifier.translation", "res://Scripts/Combat/weapons.ShotsWhenFired.translation", "res://Scripts/Combat/weapons.ProjectilesPerShot.translation", "res://Scripts/Combat/weapons.AttackRecoil.translation", "res://Scripts/Combat/weapons.Instability.translation", "res://Scripts/Combat/weapons.InventorySize.translation", "res://Scripts/Combat/weapons.Tonnage.translation", "res://Scripts/Combat/weapons.FiringDelay.translation"]
+
+source_file="res://Scripts/Combat/weapons.csv"
+dest_files=["res://Scripts/Combat/weapons.Category.translation", "res://Scripts/Combat/weapons.Type.translation", "res://Scripts/Combat/weapons.Subtype.translation", "res://Scripts/Combat/weapons.BonusA.translation", "res://Scripts/Combat/weapons.BonusB.translation", "res://Scripts/Combat/weapons.MinRange.translation", "res://Scripts/Combat/weapons.MaxRange.translation", "res://Scripts/Combat/weapons.AmmoCategory.translation", "res://Scripts/Combat/weapons.StartAmmoCapacity.translation", "res://Scripts/Combat/weapons.HeatGenerated.translation", "res://Scripts/Combat/weapons.Damage.translation", "res://Scripts/Combat/weapons.OverheatedDamageMultiplier.translation", "res://Scripts/Combat/weapons.EvasiveDamageMultiplier.translation", "res://Scripts/Combat/weapons.EvasivePipsIgnored.translation", "res://Scripts/Combat/weapons.DamageVariance.translation", "res://Scripts/Combat/weapons.HeatDamage.translation", "res://Scripts/Combat/weapons.AccuracyModifier.translation", "res://Scripts/Combat/weapons.CriticalChanceMultiplier.translation", "res://Scripts/Combat/weapons.IndirectFireCapable.translation", "res://Scripts/Combat/weapons.RefireModifier.translation", "res://Scripts/Combat/weapons.ShotsWhenFired.translation", "res://Scripts/Combat/weapons.ProjectilesPerShot.translation", "res://Scripts/Combat/weapons.AttackRecoil.translation", "res://Scripts/Combat/weapons.Instability.translation", "res://Scripts/Combat/weapons.InventorySize.translation", "res://Scripts/Combat/weapons.Tonnage.translation", "res://Scripts/Combat/weapons.FiringDelay.translation"]
+
+[params]
+
+compress=true
+delimiter=0

@@ -15,19 +15,20 @@ func _process(delta):
 	
 	if not player: return
 		
-	var target_h = 5.0
+	var target_h = 30.0
 	
 	# Try calling directly. has_method is unreliable for C#
 	var t = player.call("GetTargetNode")
 	if t:
 		# t is now a Node3D (from C# return type)
 		var dist = player.global_position.distance_to(t.global_position)
-		target_h = 5.0 + dist * 0.9
+		target_h = 10 + dist * 0.9
 		target_h = clamp(target_h, 5.0, 100.0)
 	
-	height = lerp(height, target_h, float(delta) * 5.0)
+	height = lerp(height, target_h, float(delta) * 10.0)
 	
 	var target_pos = player.global_position
 	# Position camera above and behind player, looking at them
-	global_position = target_pos + Vector3(0, height, height * 0.5)
+	# Added small X offset (0.1) to prevent "Target and up vectors are colinear" warning
+	global_position = target_pos + Vector3(0.1, height, height * 0.5)
 	look_at(target_pos, Vector3.UP)

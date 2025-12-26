@@ -109,6 +109,18 @@ public abstract partial class MissionBase : Node
         bus.EmitSignal(SignalBus.SignalName.MissionMessage, sender, message);
     }
 
+    protected void SetNavPoint(Vector3 position)
+    {
+        var bus = GetNode<SignalBus>("/root/SignalBus");
+        bus.EmitSignal("SetNavPoint", position);
+    }
+
+    protected void ClearNavPoint()
+    {
+        var bus = GetNode<SignalBus>("/root/SignalBus");
+        bus.EmitSignal("ClearNavPoint");
+    }
+
     protected void EndMission(bool success)
     {
         GD.Print($"[Mission] Mission Ended. Success: {success}");
@@ -152,6 +164,57 @@ public class TimeTrigger : MissionTrigger
     protected override bool CheckCondition(MissionBase mission)
     {
         return mission.MissionTime >= _triggerTime;
+    }
+}
+
+public class DistanceTrigger : MissionTrigger
+{
+    private Node3D _target;
+    private Vector3 _location;
+    private float _radius;
+    private Func<Node3D> _targetProvider;
+
+    public DistanceTrigger(Node3D target, Vector3 location, float radius)
+    {
+        _target = target;
+        _location = location;
+        _radius = radius;
+    }
+
+    // Support delayed target resolution (e.g. Player)
+    public DistanceTrigger(Func<Node3D> targetProvider, Vector3 location, float radius)
+    {
+        _targetProvider = targetProvider;
+        _location = location;
+        _radius = radius;
+    }
+
+    protected override bool CheckCondition(MissionBase mission)
+    {
+        if (_target == null && _targetProvider != null) _target = _targetProvider();
+        if (_target == null) return false;
+
+        return _target.GlobalPosition.DistanceTo(_location) <= _radius;
+    }
+}
+
+public class UnitCountCheckTrigger : MissionTrigger
+{
+    private Func<int> _countProvider;
+    private int _targetCount;
+    private bool _lessThan;
+
+    public UnitCountCheckTrigger(Func<int> countProvider, int targetCount, bool lessThan = true)
+    {
+        _countProvider = countProvider;
+        _targetCount = targetCount;
+        _lessThan = lessThan;
+    }
+
+    protected override bool CheckCondition(MissionBase mission)
+    {
+        int count = _countProvider();
+        return _lessThan ? count <= _targetCount : count >= _targetCount;
     }
 }
 

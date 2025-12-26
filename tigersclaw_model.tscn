@@ -1,0 +1,58 @@
+[gd_scene load_steps=8 format=3 uid="uid://cx2bt1o6vpsxu"]
+
+[ext_resource type="PackedScene" uid="uid://c37ccrtdi8smo" path="res://tigersclaw.glb" id="1_model"]
+[ext_resource type="Texture2D" uid="uid://bjmrd8ad650ec" path="res://ParticleFirecloud.png" id="4_particle"]
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_engine"]
+lifetime_randomness = 0.17
+direction = Vector3(0, 0, 2)
+spread = 2.0
+flatness = 1.0
+initial_velocity_min = 0.2
+initial_velocity_max = 0.3
+gravity = Vector3(0, 0, 0)
+scale_min = 0.3
+scale_max = 0.6
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_engine"]
+transparency = 1
+blend_mode = 1
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.8, 0.4, 0.2, 1)
+albedo_texture = ExtResource("4_particle")
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_engine"]
+material = SubResource("StandardMaterial3D_engine")
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_collision"]
+size = Vector3(8, 2, 12)
+
+[node name="TigersClawModel" type="Node3D"]
+
+[node name="Visual" type="Node3D" parent="."]
+
+[node name="Model" parent="Visual" instance=ExtResource("1_model")]
+transform = Transform3D(-4.97698, 0, 0.479229, 0, 5, 0, -0.479229, 0, -4.97698, 0, 0, 0)
+
+[node name="Engine_Left" type="Node3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 0, 5)
+
+[node name="GPUParticles3D" type="GPUParticles3D" parent="Visual/Engine_Left"]
+transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, 0, 0, 0)
+amount = 200
+lifetime = 0.3
+process_material = SubResource("ParticleProcessMaterial_engine")
+draw_pass_1 = SubResource("PlaneMesh_engine")
+
+[node name="Engine_Right" type="Node3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 0, 5)
+
+[node name="GPUParticles3D" type="GPUParticles3D" parent="Visual/Engine_Right"]
+transform = Transform3D(0.3, 0, 0, 0, 0.3, 0, 0, 0, 0.3, 0, 0, 0)
+amount = 200
+lifetime = 0.3
+process_material = SubResource("ParticleProcessMaterial_engine")
+draw_pass_1 = SubResource("PlaneMesh_engine")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_collision")

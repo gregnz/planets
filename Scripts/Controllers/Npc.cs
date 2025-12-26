@@ -13,8 +13,10 @@ namespace Planetsgodot.Scripts.Controllers;
 public partial class Npc : RigidBody3D, IDamageable, ITarget
 {
     private CombatDirector.Squadron squadron;
+
     public CombatDirector.Squadron.Attitude Attitude =>
         squadron?.attitude ?? CombatDirector.Squadron.Attitude.None;
+
     private static System.Random rnd = new System.Random();
     private bool amIDead = false;
     private Skill skill;
@@ -47,11 +49,14 @@ public partial class Npc : RigidBody3D, IDamageable, ITarget
     public struct Personality
     {
         public float Aggression; // 0-1
-        public float Loyalty;    // 0-1
+        public float Loyalty; // 0-1
         public float SelfPreservation; // 0-1
 
-        public static Personality Default => new Personality { Aggression = 0.5f, Loyalty = 0.9f, SelfPreservation = 0.5f };
-        public static Personality Wingman => new Personality { Aggression = 0.7f, Loyalty = 1.0f, SelfPreservation = 0.3f };
+        public static Personality Default => new Personality
+            { Aggression = 0.5f, Loyalty = 0.9f, SelfPreservation = 0.5f };
+
+        public static Personality Wingman => new Personality
+            { Aggression = 0.7f, Loyalty = 1.0f, SelfPreservation = 0.3f };
     }
 
     public Personality MyPersonality = Personality.Default;
@@ -81,9 +86,11 @@ public partial class Npc : RigidBody3D, IDamageable, ITarget
         AddToGroup("NPC");
 
         skill = Skill.Rookie;
-        shipSpecification = ShipFactory.GetPreset(ShipFactory.ShipType.Anaconda);
+        if (shipSpecification == null)
+            shipSpecification = ShipFactory.GetPreset(ShipFactory.ShipType.Anaconda);
         fireSystem = new FireSystem(this);
         shipController.initialiseFromSpec(shipSpecification, this, fireSystem);
+        fireSystem.SetShipSpec(shipSpecification); // Wire up heat management
 
         new ShipBuilder().Build(shipSpecification, this);
 
@@ -97,12 +104,13 @@ public partial class Npc : RigidBody3D, IDamageable, ITarget
         signalBus = GetNode<SignalBus>("/root/SignalBus");
         shipAi = GetNode<AIController>("AIController");
         shipAi._ship = shipController;
-        
+
         // Re-apply pending order if one exists (was set before Ready)
         if (CurrentSquadOrder.Type != CombatDirector.OrderType.None)
         {
             ReceiveOrder(CurrentSquadOrder);
         }
+
         // Debug Sphere
         _debugTargetSphere = new MeshInstance3D();
         var sphereMesh = new SphereMesh();
@@ -119,7 +127,7 @@ public partial class Npc : RigidBody3D, IDamageable, ITarget
         AddChild(_debugTargetSphere);
 
         // shipAi.TargetNode = (PlayerController)GetNode("/root/Root3D/Player"); // Removed auto-target
-        
+
         // === DISABLE FRIENDLY COLLISIONS ===
         // Prevents spinning/jitter in formation
         var friendlies = GetTree().GetNodesInGroup("NPC");
@@ -172,7 +180,6 @@ public partial class Npc : RigidBody3D, IDamageable, ITarget
             reticuleMesh.MaterialOverride = shaderMat;
         }
     }
-    
 
 
     public override void _Input(InputEvent inputEvent)
@@ -265,8 +272,6 @@ public partial class Npc : RigidBody3D, IDamageable, ITarget
 
             if (!IsInstanceValid(t as Node))
                 continue;
-
-
         }
 
         // Debug
@@ -291,6 +296,7 @@ public partial class Npc : RigidBody3D, IDamageable, ITarget
                 shipAi.AttackTactic = AI.TacticalPosition.Direct; // Reset tactic override
                 Debug.Print($"NPC {Name}: Threat cleared. Reverting to Player.");
             }
+
             return;
         }
 
@@ -390,6 +396,12 @@ public partial class Npc : RigidBody3D, IDamageable, ITarget
 
         fireSystem.Update(delta);
 
+        // Point-Defense: Capital ships scan for and target nearby asteroids
+        if (shipSpecification?.IsCapitalShip == true)
+        {
+            PointDefenseAsteroidCheck();
+        }
+
         // Visual Update for Reticule (New Logic)
         // Visual Update for Reticule (New Logic)
         var reticule = GetNodeOrNull<MeshInstance3D>("Reticule3D");
@@ -397,6 +409,71 @@ public partial class Npc : RigidBody3D, IDamageable, ITarget
         {
             // Rotate 90 degrees per second
             reticule.RotateY((float)delta * 1.5f);
+        }
+    }
+
+    /// <summary>
+    /// Point-defense system: capital ships automatically fire turrets at nearby asteroids
+    /// </summary>
+    private void PointDefenseAsteroidCheck()
+    {
+        const float pointDefenseRange = 150.0f;
+
+        // Get all asteroids in scene
+        var asteroids = GetTree().GetNodesInGroup("Asteroid");
+
+        ITarget closestAsteroid = null;
+        float closestDist = float.MaxValue;
+
+        foreach (var node in asteroids)
+        {
+            // Check Visible to filter out inactive pooled asteroids
+            if (node is ITarget asteroidTarget && node is Node3D node3D &&
+                IsInstanceValid(node as Node) && node3D.Visible)
+            {
+                float dist = GlobalPosition.DistanceTo(asteroidTarget.Position);
+                if (dist < pointDefenseRange && dist < closestDist)
+                {
+                    closestDist = dist;
+                    closestAsteroid = asteroidTarget;
+                }
+            }
+        }
+
+        if (closestAsteroid != null)
+        {
+            GD.Print($"[PointDef] {Name}: Asteroid at {closestDist:F1}m, firing!");
+            // Fire turrets at closest asteroid
+            FireAtTarget(closestAsteroid);
+        }
+    }
+
+    /// <summary>
+    /// Fire turrets at a specific target
+    /// </summary>
+    private void FireAtTarget(ITarget target)
+    {
+        if (fireSystem == null)
+        {
+            GD.PrintErr($"[PointDef] {Name}: fireSystem is null!");
+            return;
+        }
+
+        List<ShipFactory.ShipSpec.Hardpoint> hps = fireSystem.GetHardpointsInRange(target.Position, true);
+        GD.Print($"[PointDef] {Name}: {hps.Count} hardpoints in range");
+
+        foreach (ShipFactory.ShipSpec.Hardpoint h in hps)
+        {
+            GD.Print($"[PointDef] Hardpoint {h.name} isTurret={h.isTurret}");
+            // Fire turrets at target (check Hardpoint.isTurret, not HardpointSpec.isTurret!)
+            if (h.isTurret)
+            {
+                fireSystem.activeHardpoint = h;
+                fireSystem.currentTarget = target;
+                fireSystem.Fire();
+                GD.Print($"[PointDef] FIRED!");
+                break; // Fire one turret at a time
+            }
         }
     }
 
@@ -451,35 +528,7 @@ public partial class Npc : RigidBody3D, IDamageable, ITarget
         shipController.HandleMovement(shipSpecification, this, delta, false, true);
     }
 
-    void FireDecision(Vector3 tp)
-    {
-        // Choose active hardpoint
-        //      - Ammo?
-        //      - Range
-        //      - Probability of success
-        //      - Damage, target position (for defensive measures)
-        // https://www.gdcvault.com/play/1024679/Math-for-Game-Programmers-Predictable
-
-        List<ShipFactory.ShipSpec.Hardpoint> hps = fireSystem.GetHardpointsInRange(tp, true);
-        Debug.Print(@$"Fire AI: In range:  {hps}");
-
-        foreach (ShipFactory.ShipSpec.Hardpoint h in hps)
-        {
-            // Debug.Print(@$"Fire AI: Turret: {h.HardpointSpec.isTurret} Missile: {h.HardpointSpec is HardpointSpec.Missile}");
-            // if (
-            //     ai.IsFacingObject(transform.forward, transform.position,
-            //         currentOrder.GetCurrentAction().Target.transform.position) ||
-            //     h.HardpointSpec.isTurret || h.HardpointSpec is HardpointSpec.Missile
-            // )
-            // {
-            //     fireSystem.activeHardpoint = h;
-            //     fireSystem.currentTarget = currentOrder.GetCurrentAction().Target;
-            //     fireSystem.Fire();
-            //     break;
-            // }
-            // else fireSystem.StopFiring();
-        }
-    }
+    // FireDecision now handled by FireAtTarget(ITarget) for type safety
 
     float m_Angle;
     public CombatDirector.Squadron.Attitude attitude;
@@ -535,41 +584,63 @@ public partial class Npc : RigidBody3D, IDamageable, ITarget
         e.QueueFree();
     }
 
-    public void Destroy(List<Node> createdNodes) { }
+    public void Destroy(List<Node> createdNodes)
+    {
+    }
 
     public void Damage(HardpointSpec currentHardpointSpec, Vector3 hit, double deltaTime)
     {
         // shield?.OnHit(hit); // Handled by ShipController
-        shipController.Damage(currentHardpointSpec, hit, deltaTime);
-        ProgressBar shieldBar =
-            GetNode("SubViewport/Node2D/VBoxContainer/ShieldBar") as ProgressBar;
-        ProgressBar armourBar =
-            GetNode("SubViewport/Node2D/VBoxContainer/ArmourBar") as ProgressBar;
+        if (shipController == null) return;
 
-        float[] strengthPercents = shipController.Shield.GetStrengthPercents();
-        shieldBar.Value = strengthPercents.Min();
-        strengthPercents = shipController.Armor.GetStrengthPercents();
-        armourBar.Value = strengthPercents.Min();
-        signalBus.EmitSignal("NpcTargetChanged", GetStatus());
+        shipController.Damage(currentHardpointSpec, hit, deltaTime);
+
+        var shieldBar = GetNodeOrNull<ProgressBar>("SubViewport/Node2D/VBoxContainer/ShieldBar");
+        var armourBar = GetNodeOrNull<ProgressBar>("SubViewport/Node2D/VBoxContainer/ArmourBar");
+
+        if (shipController.Shield != null && shieldBar != null)
+        {
+            float[] strengthPercents = shipController.Shield.GetStrengthPercents();
+            shieldBar.Value = strengthPercents.Min();
+        }
+
+        if (shipController.Armor != null && armourBar != null)
+        {
+            float[] strengthPercents = shipController.Armor.GetStrengthPercents();
+            armourBar.Value = strengthPercents.Min();
+        }
+
+        signalBus?.EmitSignal("NpcTargetChanged", GetStatus());
         UpdateShieldState();
     }
 
     public void Damage(float damage, Vector3 transformForward, Vector3 hitPosition = default)
     {
         // Shield hit visual handled by ShipController if quadrant active
+        if (shipController == null)
+        {
+            GD.PrintErr($"NPC {Name}: ShipController is null in Damage!");
+            return;
+        }
+
         shipController.Damage(damage, transformForward, hitPosition);
 
-        ProgressBar shieldBar =
-            GetNode("SubViewport/Node2D/VBoxContainer/ShieldBar") as ProgressBar;
-        ProgressBar armourBar =
-            GetNode("SubViewport/Node2D/VBoxContainer/ArmourBar") as ProgressBar;
+        var shieldBar = GetNodeOrNull<ProgressBar>("SubViewport/Node2D/VBoxContainer/ShieldBar");
+        var armourBar = GetNodeOrNull<ProgressBar>("SubViewport/Node2D/VBoxContainer/ArmourBar");
 
-        float[] strengthPercents = shipController.Shield.GetStrengthPercents();
-        shieldBar.Value = strengthPercents.Min();
-        strengthPercents = shipController.Armor.GetStrengthPercents();
-        armourBar.Value = strengthPercents.Min();
+        if (shipController.Shield != null && shieldBar != null)
+        {
+            float[] strengthPercents = shipController.Shield.GetStrengthPercents();
+            shieldBar.Value = strengthPercents.Min();
+        }
 
-        signalBus.EmitSignal("NpcTargetChanged", GetStatus());
+        if (shipController.Armor != null && armourBar != null)
+        {
+            float[] strengthPercents = shipController.Armor.GetStrengthPercents();
+            armourBar.Value = strengthPercents.Min();
+        }
+
+        signalBus?.EmitSignal("NpcTargetChanged", GetStatus());
         UpdateShieldState();
     }
 
@@ -587,6 +658,7 @@ public partial class Npc : RigidBody3D, IDamageable, ITarget
                 break;
             }
         }
+
         shield.SetActive(shieldUp);
     }
 
@@ -599,7 +671,6 @@ public partial class Npc : RigidBody3D, IDamageable, ITarget
     {
         GD.Print("NPC Collided with: ", body.Name);
     }
-
 
 
     public void SetAttitude(CombatDirector.Squadron.Attitude attitude)
@@ -627,19 +698,20 @@ public partial class Npc : RigidBody3D, IDamageable, ITarget
         status["position"] = Position.X + " " + Position.Z;
         status["debug_threat_name"] = DebugThreatName;
         status["debug_threat_time"] = DebugMinTimeImpact;
-        
+
         // AI History
         if (shipAi.DecisionHistory != null && shipAi.DecisionHistory.Count > 0)
         {
             // Take last 5
-            var history = shipAi.DecisionHistory.Skip(Math.Max(0, shipAi.DecisionHistory.Count - 5)).Reverse().Select(x => x.ToString()).ToArray();
+            var history = shipAi.DecisionHistory.Skip(Math.Max(0, shipAi.DecisionHistory.Count - 5)).Reverse()
+                .Select(x => x.ToString()).ToArray();
             status["decision_history"] = history;
         }
         else
         {
             status["decision_history"] = new string[] { };
         }
-        
+
         return status;
     }
 
@@ -649,7 +721,7 @@ public partial class Npc : RigidBody3D, IDamageable, ITarget
         if (reticule != null)
         {
             reticule.Visible = b;
-            
+
             if (b)
             {
                 Color targetColor = new Color(0, 1, 0, 1); // Default Green
@@ -657,7 +729,7 @@ public partial class Npc : RigidBody3D, IDamageable, ITarget
                 {
                     targetColor = new Color(1, 0, 0, 1); // Red
                 }
-                
+
                 if (reticule.MaterialOverride is ShaderMaterial mat)
                 {
                     mat.SetShaderParameter("albedo", targetColor);
@@ -679,13 +751,14 @@ public partial class Npc : RigidBody3D, IDamageable, ITarget
         // 1. Personality Check (Loyalty)
         // Simple check: if Loyalty is very low, they might ignore "Dangerous" orders
         // For now, Wingmen obey most things.
-        
+
         float roll = (float)rnd.NextDouble();
-        if (roll > MyPersonality.Loyalty && order.Type != CombatDirector.OrderType.Evasion) // Execution check, except evasion
+        if (roll > MyPersonality.Loyalty &&
+            order.Type != CombatDirector.OrderType.Evasion) // Execution check, except evasion
         {
-             // Ignore/Complain
-             GD.Print($"NPC {Name}: Ignored Order {order.Type} (Loyalty Check Failed)");
-             return;
+            // Ignore/Complain
+            GD.Print($"NPC {Name}: Ignored Order {order.Type} (Loyalty Check Failed)");
+            return;
         }
 
         CurrentSquadOrder = order;
@@ -705,7 +778,7 @@ public partial class Npc : RigidBody3D, IDamageable, ITarget
         switch (order.Type)
         {
             case CombatDirector.OrderType.None:
-                break; 
+                break;
             case CombatDirector.OrderType.FormUp:
                 // Find Leader (Player for now, or Squadron Leader)
                 // If I'm in Player Squadron:
@@ -715,33 +788,54 @@ public partial class Npc : RigidBody3D, IDamageable, ITarget
                     var player = gameController.player;
                     if (player != null)
                     {
-                         // Join Formation on Player
-                         // Special case: Player Leader.
-                         // We need to tell AIController to form on Player RigidBody
-                         shipAi.FormationLeaderBody = player; 
-                         shipAi.ForceState(AIController.AIState.Formation);
+                        // Join Formation on Player
+                        // Special case: Player Leader.
+                        // We need to tell AIController to form on Player RigidBody
+                        shipAi.FormationLeaderBody = player;
+                        shipAi.ForceState(AIController.AIState.Formation);
                     }
                 }
+
                 break;
-                
+
             case CombatDirector.OrderType.AttackTarget:
                 if (order.Target != null)
                 {
                     shipAi.TargetNode = order.Target.GetRigidBody3D(); // Cast safely
                     shipAi.CurrentState = AIController.AIState.AttackRun;
                 }
+
                 break;
-                
+
             case CombatDirector.OrderType.FreeFire:
                 shipAi.CurrentState = AIController.AIState.CombatFly; // Default wandering/combat
                 break;
-                
+
             case CombatDirector.OrderType.Evasion:
                 shipAi.EnterEvasion(null); // Evade nothing specific, just break
                 break;
 
-             case CombatDirector.OrderType.HoldFire:
+            case CombatDirector.OrderType.HoldFire:
                 shipAi.CurrentState = AIController.AIState.Idle; // Or follow but don't shoot
+                break;
+
+            case CombatDirector.OrderType.Defend:
+                // Defend/Patrol a position: navigate to that position
+                if (order.Position.HasValue)
+                {
+                    shipAi.TargetPosition = order.Position.Value;
+                    shipAi.CurrentState = AIController.AIState.Arrive;
+                }
+
+                break;
+
+            case CombatDirector.OrderType.Warp:
+                if (order.Position.HasValue)
+                {
+                    shipAi.WarpTarget = order.Position.Value;
+                    shipAi.CurrentState = AIController.AIState.Warp;
+                }
+
                 break;
         }
     }

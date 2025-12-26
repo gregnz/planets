@@ -242,11 +242,25 @@ namespace Planetsgodot.Scripts.AI
             {
                 float dist = ai.TargetNode.GlobalPosition.DistanceTo(ai._ship.Rb.GlobalPosition);
 
+                // WEAPON CAPABILITY LOGIC
+                // Capital Ships / Turret Platforms -> Orbit/Broadside (CombatFly)
+                if (ai._ship.Capabilities.HasTurrets && !ai._ship.Capabilities.HasFixedWeapons)
+                {
+                    return new EvaluationResult
+                    {
+                        Score = 0.5f,
+                        Reason = $"Engaging Target (Turrets) (Dist: {dist:F0})",
+                        SuggestedState = AIController.AIState.CombatFly, // Boids/Orbit logic
+                        SuggestedTactic = TacticalPosition.FlankLeft // Default to broadside?
+                    };
+                }
+
+                // Fighters / Fixed Weapons / Missiles -> Attack Run (Intercept)
                 // Score can scale with opportunity? For now constant baseline.
                 return new EvaluationResult
                 {
                     Score = 0.5f, // Base importance
-                    Reason = $"Engaging Target (Dist: {dist:F0})",
+                    Reason = $"Engaging Target (Intercept) (Dist: {dist:F0})",
                     SuggestedState = AIController.AIState.AttackRun
                 };
             }

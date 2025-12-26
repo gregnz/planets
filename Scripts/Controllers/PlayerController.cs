@@ -21,6 +21,7 @@ public partial class PlayerController : RigidBody3D, IDamageable, ITarget
     public ShipController ship = new();
     ShipFactory.ShipSpec shipSpecification;
     FireSystem fireSystem;
+    public FireSystem GetFireSystem() => fireSystem;
     public PackedScene explosion;
     private bool amIDead = false;
 
@@ -29,6 +30,11 @@ public partial class PlayerController : RigidBody3D, IDamageable, ITarget
     private SignalBus signalBus;
     private float t = 0;
     private Shield shield;
+
+    // Autopilot Fields
+    private Vector3? _navPoint;
+    private bool _autopilotActive = false;
+    private bool _jPressed = false;
 
     // Surface Mode
     public bool SurfaceMode = false;
@@ -58,7 +64,7 @@ public partial class PlayerController : RigidBody3D, IDamageable, ITarget
         _state = new PlayerState();
         fireSystem = new FireSystem(this);
 
-        string shipId = "Anaconda"; // Fallback
+        string shipId = "Adder";
 
         if (
             CampaignManager.Instance != null
@@ -74,18 +80,76 @@ public partial class PlayerController : RigidBody3D, IDamageable, ITarget
         }
 
         shipSpecification = ShipFactory.presetFromString(shipId);
+        GD.Print($"[PlayerParams] Loaded Ship: {shipSpecification.manoeuvrability}");
+
+        // --- Dynamic Ship Loading ---
+        Node3D visualsNode = null;
+
+        if (!string.IsNullOrEmpty(shipSpecification.PrefabPath))
+        {
+            // 1. Remove default Visuals
+            GetNodeOrNull<Node3D>("Visual")?.QueueFree();
+
+            // 2. Remove default Collision
+            GetNodeOrNull<CollisionShape3D>("CollisionShape3D")?.QueueFree();
+
+            // 3. Load New Model
+            GD.Print($"Loading Ship Model: {shipSpecification.PrefabPath}");
+            var scene = GD.Load<PackedScene>(shipSpecification.PrefabPath);
+            if (scene != null)
+            {
+                var modelInstance = scene.Instantiate() as Node3D;
+                AddChild(modelInstance);
+
+                // 4. Handle Collision Shape (Reparent for Physics)
+                var newCol = modelInstance.GetNodeOrNull<CollisionShape3D>("CollisionShape3D");
+                if (newCol != null)
+                {
+                    newCol.Reparent(this);
+                }
+
+                // 5. Set VisualsNode Reference
+                visualsNode = modelInstance.GetNodeOrNull<Node3D>("Visual") ?? modelInstance;
+            }
+            else
+            {
+                GD.PrintErr($"Failed to load ship prefab: {shipSpecification.PrefabPath}");
+            }
+        }
+        else
+        {
+            // Fallback to default structure
+            visualsNode = GetNodeOrNull<Node3D>("Visual");
+        }
+
+        if (visualsNode == null)
+        {
+            visualsNode = this.GetChild(0) as Node3D;
+        }
+
         ship.initialiseFromSpec(shipSpecification, this, fireSystem);
 
-        Node3D VisualsNode = this.GetChild(0) as Node3D;
-        new ShipBuilder().Build(shipSpecification, VisualsNode);
-        
+        new ShipBuilder().Build(shipSpecification, visualsNode);
+
         // Add Shield
         shield = new Shield();
-        VisualsNode.AddChild(shield);
+        visualsNode.AddChild(shield);
+
+        // Scale shield
+        float shieldRadius = shipSpecification.size > 50 ? shipSpecification.size / 4.0f : 2.5f;
+        shield.SetSize(shieldRadius);
+
         ship.SetShieldVisuals(shield);
 
         // _shieldModifier = GetComponentInChildren<ShieldModifier>();
         fireSystem.Initialise(shipSpecification);
+        fireSystem.SetShipSpec(shipSpecification); // Wire up heat management
+
+        // Update Mass from Spec (Size is treated as Mass in CSV)
+        if (shipSpecification.size > 0)
+        {
+            Mass = shipSpecification.size;
+        }
 
         SetCollisionLayerValue(1, false);
         CollisionLayer = 2;
@@ -100,6 +164,54 @@ public partial class PlayerController : RigidBody3D, IDamageable, ITarget
         gameController.player = this;
 
         signalBus = GetNode<SignalBus>("/root/SignalBus");
+
+        // Nav Point Tracking
+        signalBus.Connect("SetNavPoint", Callable.From<Vector3>(OnSetNavPoint));
+        signalBus.Connect("ClearNavPoint", Callable.From(OnClearNavPoint));
+    }
+
+    private void OnSetNavPoint(Vector3 pos)
+    {
+        _navPoint = pos;
+    }
+
+    private void OnClearNavPoint()
+    {
+        _navPoint = null;
+        if (_autopilotActive) ToggleAutopilot();
+    }
+
+    private void ToggleAutopilot()
+    {
+        if (_navPoint == null)
+        {
+            GD.Print("[Player] Cannot engage Autopilot: No Nav Point set.");
+            return;
+        }
+
+        _autopilotActive = !_autopilotActive;
+        ship.InWarp = _autopilotActive;
+
+        if (_autopilotActive)
+        {
+            GD.Print("[Player] Autopilot ENGAGED. Warping to " + _navPoint);
+            // Order Squad to Warp
+            // Need access to GameController's CombatDirector
+            if (gameController != null && gameController.combatDirector != null)
+            {
+                gameController.combatDirector.IssuePlayerSquadronOrder(
+                    new CombatDirector.SquadOrder(CombatDirector.OrderType.Warp, null, _navPoint));
+            }
+        }
+        else
+        {
+            GD.Print("[Player] Autopilot DISENGAGED.");
+            if (gameController != null && gameController.combatDirector != null)
+            {
+                gameController.combatDirector.IssuePlayerSquadronOrder(
+                    new CombatDirector.SquadOrder(CombatDirector.OrderType.FormUp));
+            }
+        }
     }
 
     public override void _Process(double delta)
@@ -121,6 +233,29 @@ public partial class PlayerController : RigidBody3D, IDamageable, ITarget
 
     public override void _PhysicsProcess(double delta)
     {
+        if (amIDead) return;
+
+        // Critical overheat damage (120%+ heat)
+        if (fireSystem?.IsCriticalOverheat == true)
+        {
+            float overheatDamage = 5f * (float)delta; // 5 damage per second at critical
+            ship.Damage(overheatDamage, Vector3.Zero); // Internal damage, no direction
+        }
+
+        // J Key Toggle
+        if (Input.IsKeyPressed(Key.J))
+        {
+            if (!_jPressed)
+            {
+                ToggleAutopilot();
+                _jPressed = true;
+            }
+        }
+        else
+        {
+            _jPressed = false;
+        }
+
         base._PhysicsProcess(delta);
         ship.HandleMovement(shipSpecification, this, delta, false, false);
         PhysicsDirectSpaceState3D spaceState3D = GetWorld3D().DirectSpaceState;
@@ -214,7 +349,9 @@ public partial class PlayerController : RigidBody3D, IDamageable, ITarget
             fireSystem.StopFiring();
         }
 
-        if (fireSystem.firing) { }
+        if (fireSystem.firing)
+        {
+        }
     }
 
     public override void _IntegrateForces(PhysicsDirectBodyState3D state)
@@ -241,9 +378,10 @@ public partial class PlayerController : RigidBody3D, IDamageable, ITarget
             Key.Key7,
             Key.Key8,
             Key.Key9,
+            Key.Key0,
         };
 
-        for (int i = 0; i < shipSpecification.shipsWeapons.Count; i++)
+        for (int i = 0; i < shipSpecification.shipsWeapons.Count && i < weaponKeys.Length; i++)
         {
             if (Input.IsKeyPressed(weaponKeys[i]))
             {
@@ -287,30 +425,64 @@ public partial class PlayerController : RigidBody3D, IDamageable, ITarget
         // Firing logic moved to _PhysicsProcess
 
         ship.MovementX = 0;
+        ship.MovementX = 0;
         ship.MovementY = 0;
-        if (Input.IsActionPressed("turn_left"))
-            ship.MovementX = -1;
-        if (Input.IsActionPressed("turn_right"))
-            ship.MovementX = 1;
-        if (Input.IsActionPressed("forward_thrust"))
-            ship.MovementY = 1;
-        if (Input.IsActionPressed("backward_thrust"))
-            ship.MovementY = -1;
 
-        if (Input.IsActionPressed("boost"))
-            ship.boosting = true;
-        else
-            ship.boosting = false;
+        if (_autopilotActive && _navPoint.HasValue)
+        {
+            // Autopilot Control
+            ship.MovementY = 1.0f; // Full Throttle
+            ship.boosting = true; // Use Boost
 
-        _state.Rotation = Rotation;
-        _state.Pos = Position;
-        _state.CurrentTarget = null;
-        _state.Shield = ship.Shield;
-        _state.Armor = ship.Armor;
-        if (Input.IsActionPressed("boost"))
-            ship.boosting = true;
+            // Steering
+            // Convert world target to local space to determine steering direction
+            Vector3 targetLocal = ToLocal(_navPoint.Value);
+
+            // If target is to the right (+X), steer 1. If left (-X), steer -1.
+            // Scale based on angle to avoid overshooting?
+            // Simple P-controller on X
+            // ship.MovementX = Mathf.Clamp(targetLocal.X / 100.0f, -1f, 1f); 
+            // Inverted for ShipController (Positive MovementX might be Turn Right or Left? Let's check)
+            // Default: MovementX -1 = Left (Turn Left key). 
+            // ToLocal.X > 0 is Right. So we want MovementX = 1.
+
+            // Check if behind
+            if (targetLocal.Z > 0)
+            {
+                // Target is behind, hard turn
+                ship.MovementX = targetLocal.X > 0 ? 1 : -1;
+            }
+            else
+            {
+                // Target is in front
+                ship.MovementX = Mathf.Clamp(targetLocal.X / 50.0f, -1f, 1f);
+            }
+
+            // Check distance to disengage? 
+            // GameController/Mission triggers handle "Arrival", so maybe we don't auto-stop on distance here.
+            // But if we get super close we should probably stop warping.
+            if (GlobalPosition.DistanceTo(_navPoint.Value) < 500f)
+            {
+                ToggleAutopilot();
+            }
+        }
         else
-            ship.boosting = false;
+        {
+            // Manual Control
+            if (Input.IsActionPressed("turn_left"))
+                ship.MovementX = -1;
+            if (Input.IsActionPressed("turn_right"))
+                ship.MovementX = 1;
+            if (Input.IsActionPressed("forward_thrust"))
+                ship.MovementY = 1;
+            if (Input.IsActionPressed("backward_thrust"))
+                ship.MovementY = -1;
+
+            if (Input.IsActionPressed("boost"))
+                ship.boosting = true;
+            else
+                ship.boosting = false;
+        }
 
         _state.Rotation = Rotation;
         _state.Pos = Position;
@@ -375,20 +547,21 @@ public partial class PlayerController : RigidBody3D, IDamageable, ITarget
         ship.Damage(damage, transformForward, hitPosition);
         UpdateShieldState();
     }
-    
+
     private void UpdateShieldState()
     {
         if (shield == null || ship.Shield == null) return;
-        
+
         bool shieldUp = false;
-        foreach(float s in ship.Shield.strength) 
+        foreach (float s in ship.Shield.strength)
         {
-            if (s > 0) 
-            { 
-                shieldUp = true; 
-                break; 
+            if (s > 0)
+            {
+                shieldUp = true;
+                break;
             }
         }
+
         shield.SetActive(shieldUp);
     }
 
@@ -416,7 +589,9 @@ public partial class PlayerController : RigidBody3D, IDamageable, ITarget
         return status;
     }
 
-    public void SetTargeted(bool b) { }
+    public void SetTargeted(bool b)
+    {
+    }
 
     public ShipController MyShip()
     {
@@ -433,11 +608,11 @@ public partial class PlayerController : RigidBody3D, IDamageable, ITarget
         // Default formation position?
         // For now just pass type and target
         var order = new CombatDirector.SquadOrder(type, target);
-        
+
         if (gameController != null && gameController.combatDirector != null)
         {
-             gameController.combatDirector.IssuePlayerSquadronOrder(order);
-             GD.Print($"Player Issued Order: {type}");
+            gameController.combatDirector.IssuePlayerSquadronOrder(order);
+            GD.Print($"Player Issued Order: {type}");
         }
     }
 

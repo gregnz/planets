@@ -25,7 +25,6 @@ Thumbs.db
 
 # IDEs
 .idea/
-.vscode/
 *.sln.DotSettings.user
 *.suo
 *.user

@@ -1,7 +1,6 @@
-[gd_scene load_steps=11 format=3 uid="uid://cauxcbftppnqh"]
+[gd_scene load_steps=10 format=3 uid="uid://cauxcbftppnqh"]
 
 [ext_resource type="Script" uid="uid://el11rwoa07e1" path="res://Scripts/Controllers/PlayerController.cs" id="1_732wk"]
-[ext_resource type="PackedScene" uid="uid://74n7d71r2ja4" path="res://models/Adder.blend" id="2_ytkpy"]
 [ext_resource type="Texture2D" uid="uid://bjmrd8ad650ec" path="res://ParticleFirecloud.png" id="3_kutke"]
 [ext_resource type="PackedScene" uid="uid://xf2xp2eghmh0" path="res://models/player_fbx/A_simple_space_corvet_0228013317_texture.fbx" id="4_2rltj"]
 
@@ -58,10 +57,6 @@ script = ExtResource("1_732wk")
 
 [node name="Visual" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 1.12238e-23, 0, 1.12238e-23, 1, 0, 0, 0)
-
-[node name="Adder" parent="Visual" instance=ExtResource("2_ytkpy")]
-transform = Transform3D(1, 0, 0, 0, 1, 1.12238e-23, 0, 1.12238e-23, 1, 2.08165e-12, 2.08165e-12, 2.08165e-12)
-visible = false
 
 [node name="Engine_2" type="Node3D" parent="Visual"]
 transform = Transform3D(1, 0, 0, 0, 1, 1.12238e-23, 0, 1.12238e-23, 1, 0.1, 2.08165e-12, 0.7)

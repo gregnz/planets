@@ -14,13 +14,13 @@ public class AsteroidFieldSpec
     public float X
     {
         get => Center.X;
-        set => Center = new Vector3(value, Center.Y, Center.Z);
+        set => Center = new Vector3(value, 0, Center.Z);
     }
 
     public float Y
     {
         get => Center.Z; // Maps to Z in 3D space
-        set => Center = new Vector3(Center.X, Center.Y, value);
+        set => Center = new Vector3(Center.X, 0, value); // Should set Z!
     }
 
     // Factory method for quick setup

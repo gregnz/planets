@@ -11,7 +11,7 @@ using Planetsgodot.Scripts.Combat;
 /// </summary>
 public partial class OptimizedAsteroidField : Node3D
 {
-    [Export] public int AsteroidCount = 1000;
+    [Export] public int AsteroidCount = 500;
 
     [Export] public float FieldRadius = 100f;
 
@@ -147,17 +147,27 @@ public partial class OptimizedAsteroidField : Node3D
         GD.Print($"Physics pool initialized with {PHYSICS_POOL_SIZE} bodies");
     }
 
+    private int _frameCounter = 0;
+    private int _physicsSliceIndex = 0;
+    private const int PHYSICS_SLICE_SIZE = 100; // Check 100 asteroids per frame
+
     public override void _PhysicsProcess(double delta)
     {
-        UpdateOrbits((float)delta);
-        UpdateVisuals();
+        _frameCounter++;
+
+        // Throttle Visual Updates to 20Hz (every 3 frames)
+        if (_frameCounter % 3 == 0)
+        {
+            UpdateOrbits((float)delta * 3.0f); // Compensate delta
+            UpdateVisuals();
+        }
 
         // Enforce 2D Planar Physics
         // (Handled by AxisLocks on individual bodies now)
 
         if (_gc?.player != null)
         {
-            UpdatePhysicsPool(_gc.player.GlobalPosition);
+            UpdatePhysicsPoolSliced(_gc.player.GlobalPosition);
         }
     }
 
@@ -218,14 +228,14 @@ public partial class OptimizedAsteroidField : Node3D
         _multiMesh.SetInstanceTransform(index, transform);
     }
 
-    private void UpdatePhysicsPool(Vector3 playerPos)
+    private void UpdatePhysicsPoolSliced(Vector3 playerPos)
     {
-        // Deactivate far asteroids
+        // 1. Deactivate far asteroids (Check ALL active bodies, since Pool is small (500))
+        // Doing this every frame is fine as 500 checks is cheap
         for (int poolIdx = 0; poolIdx < PHYSICS_POOL_SIZE; poolIdx++)
         {
             int dataIdx = _poolToDataMapping[poolIdx];
-            if (dataIdx < 0)
-                continue;
+            if (dataIdx < 0) continue;
 
             float dist = playerPos.DistanceTo(_asteroids[dataIdx].Position);
             if (dist > PHYSICS_ACTIVATION_RANGE * 1.5f) // Hysteresis
@@ -234,18 +244,28 @@ public partial class OptimizedAsteroidField : Node3D
             }
         }
 
-        // Activate nearby asteroids
-        for (int i = 0; i < _asteroids.Length; i++)
-        {
-            ref var a = ref _asteroids[i];
-            if (a.IsDestroyed || a.ActiveBodyIndex >= 0)
-                continue;
+        // 2. Activate nearby asteroids (Time Sliced check of data array)
+        int checkedCount = 0;
+        int totalItems = _asteroids.Length;
 
-            float dist = playerPos.DistanceTo(a.Position);
-            if (dist < PHYSICS_ACTIVATION_RANGE)
+        while (checkedCount < PHYSICS_SLICE_SIZE)
+        {
+            _physicsSliceIndex++;
+            if (_physicsSliceIndex >= totalItems) _physicsSliceIndex = 0;
+
+            ref var a = ref _asteroids[_physicsSliceIndex];
+
+            // Logic: If not valid candidate, skip
+            if (!a.IsDestroyed && a.ActiveBodyIndex < 0)
             {
-                ActivatePhysicsBody(i);
+                float dist = playerPos.DistanceTo(a.Position);
+                if (dist < PHYSICS_ACTIVATION_RANGE)
+                {
+                    ActivatePhysicsBody(_physicsSliceIndex);
+                }
             }
+
+            checkedCount++;
         }
     }
 
@@ -272,7 +292,7 @@ public partial class OptimizedAsteroidField : Node3D
         // Configure body
         body.GlobalPosition = a.Position;
         body.Scale = Vector3.One; // Reset body scale to 1
-        body.Mass = 1000f * a.Scale;
+        body.Mass = 1000f * a.Scale * a.Scale * a.Scale;
         body.Visible = true; // Debug: Show physics body
 
         // Hide original mesh if present
@@ -288,6 +308,8 @@ public partial class OptimizedAsteroidField : Node3D
             collisionShape.Scale = Vector3.One * a.Scale * 2.0f;
         }
 
+        // Debug Sphere Disabled for Performance
+        /*
         // Add/Update Debug Sphere
         var debugSphere = body.GetNodeOrNull<MeshInstance3D>("DebugSphere");
         if (debugSphere == null)
@@ -311,6 +333,7 @@ public partial class OptimizedAsteroidField : Node3D
 
         debugSphere.Visible = true;
         debugSphere.Scale = Vector3.One * a.Scale * 2.0f;
+        */
 
         body.ProcessMode = ProcessModeEnum.Inherit;
         body.SetPhysicsProcess(true);
@@ -339,7 +362,7 @@ public partial class OptimizedAsteroidField : Node3D
         {
             astScript.OptimizedField = this;
             astScript.OptimizedPoolIndex = poolIdx;
-            astScript.Mass = 1000f * a.Scale;
+            astScript.Mass = 1000f * a.Scale * a.Scale * a.Scale;
             astScript.radius = 40.0f * a.Scale;
         }
     }
@@ -510,11 +533,10 @@ public partial class OptimizedAsteroidField : Node3D
             Vector3 spawnPos = pPos + offset;
             spawnPos.Y = 0;
 
-            Vector3 explosionDir = (offset.Normalized() + hitDirection * 0.5f).Normalized();
+            Vector3 explosionDir = (offset.Normalized() + hitDirection * 0.05f).Normalized();
             float deltaV = 5.0f + (float)_rng.NextDouble() * 10.0f; // 5-15
 
             SpawnFragment(spawnPos, newScale, parentVelocity + explosionDir * deltaV);
-            GD.Print($"Fragment {i} spawned at {spawnPos} Asteroid: {pPos}");
         }
     }
 

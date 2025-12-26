@@ -11,7 +11,8 @@ public class ShipFactory
 {
     public string name;
 
-    static int secondsForSpeed = 30; // eg: Adder@244 = 8m/s. GD ✅ Confirmed this works godot. Will travel 8 units / second.
+    static int
+        secondsForSpeed = 30; // eg: Adder@244 = 8m/s. GD ✅ Confirmed this works godot. Will travel 8 units / second.
 
     /* Acceleration: How much force to add per second. massMetres/second/second.
      *
@@ -22,7 +23,9 @@ public class ShipFactory
      * Note, this doesn't include drag.
      */
     static float accelerationCoefficient = 1 / 39.41f;
-    private static float radPerSecondCoeff = Mathf.Pi / 8; // Adder@4 = Mathf.PI/2 (ie, 90 degrees per second). 2PI Radians = 360.
+
+    private static float
+        radPerSecondCoeff = Mathf.Pi / 8; // Adder@4 = Mathf.PI/2 (ie, 90 degrees per second). 2PI Radians = 360.
 
     // Type-7 Transporter = 1* Math.PI/8 = 45 degrees per second.
 
@@ -82,6 +85,7 @@ public class ShipFactory
         Seven,
         Eight,
         Nine,
+        Ten,
     }
 
     public class ShipSpec
@@ -113,6 +117,13 @@ public class ShipFactory
         public System.Collections.Generic.Dictionary<HardpointSpec, int> weaponsCounts = new();
         public List<string> weaponsNames;
         public bool adjustableThrust = true;
+        public bool IsCapitalShip = false; // Capital ships have reduced agility
+
+        // Heat Management
+        public float HeatCapacity = 100f; // Max heat before overheat (100%)
+        public float HeatDissipation = 10f; // Heat dissipated per second
+
+        public string PrefabPath { get; set; }
         public Variant weaponsAsStringArray;
 
         public class Hardpoint
@@ -211,6 +222,7 @@ public class ShipFactory
             ShipType.Missile,
             @$"{{
 				'name': 'Missile', 
+                'PrefabPath': 'res://missile.glb',
 				'size': 1, 
 				'maxSpeed': 8, 
                 'acceleration': 2,
@@ -228,7 +240,8 @@ public class ShipFactory
             ShipType.TigersClaw,
             @$"{{
                 'name': 'Tigers Claw',
-                'size': 500,
+                'PrefabPath': 'res://tigersclaw_model.tscn',
+                'size': 5000,
                 'maxSpeed': 2,
                 'acceleration': 0.3,
                 'manoeuvrability': 1,
@@ -236,13 +249,18 @@ public class ShipFactory
                 'shield': 3000,
                 'boostCoeff': 1.2,
                 'adjustableThrust': true,
+                'IsCapitalShip': true,
                 'hardpoints' : [
                     {{'location': 'One', 'name': 'Weapon_Laser_MediumLaserER_1-MagnaVI.turret', 'ammo': -1, 'x': 2.0, 'y': 0.5, 'z': 3.0}},
                     {{'Location': 'Two', 'name': 'Weapon_Laser_MediumLaserER_1-MagnaVI.turret', 'ammo': -1, 'x': -2.0, 'y': 0.5, 'z': 3.0}},
                     {{'Location': 'Three', 'name': 'Weapon_Laser_MediumLaserER_1-MagnaVI.turret', 'ammo': -1, 'x': 2.5, 'y': 0.5, 'z': -2.0}},
                     {{'Location': 'Four', 'name': 'Weapon_Laser_MediumLaserER_1-MagnaVI.turret', 'ammo': -1, 'x': -2.5, 'y': 0.5, 'z': -2.0}},
-                    {{'Location': 'Five', 'name': 'Weapon_LRM_LRM20_3-Zeus.json', 'ammo': 200, 'x': 1.5, 'y': 1, 'z': 0.0}},
-                    {{'Location': 'Six', 'name': 'Weapon_LRM_LRM20_3-Zeus.json', 'ammo': 200, 'x': -1.5, 'y': 1, 'z': 0.0}},
+                    {{'Location': 'Five', 'name': 'Weapon_LRM_LRM20_3-Zeus.json', 'ammo': 2000, 'x': 1.5, 'y': 2, 'z': 0.0}},
+                    {{'Location': 'Six', 'name': 'Weapon_LRM_LRM20_3-Zeus.json', 'ammo': 2000, 'x': -1.5, 'y': 2, 'z': 0.0}},
+                    {{'location': 'Seven', 'name': 'Weapon_Laser_MediumLaserER_1-MagnaVI.turret', 'ammo': -1, 'x': 4.0, 'y': 1.5, 'z': 3.0}},
+                    {{'Location': 'Eight', 'name': 'Weapon_Laser_MediumLaserER_1-MagnaVI.turret', 'ammo': -1, 'x': -4.0, 'y': 1.5, 'z': 3.0}},
+                    {{'Location': 'Nine', 'name': 'Weapon_Laser_MediumLaserER_1-MagnaVI.turret', 'ammo': -1, 'x': 4.5, 'y': 1.5, 'z': -2.0}},
+                    {{'Location': 'Ten', 'name': 'Weapon_Gauss_Gauss_0-STOCK.turret', 'ammo': -1, 'x': -4.5, 'y': 1.5, 'z': -2.0}},
                 ]
             }}"
         },
@@ -263,7 +281,7 @@ public class ShipFactory
                             {'Location': 'Five', 'name': 'Weapon_Autocannon_AC2_2-Mydron.json', 'ammo': -1, 'x':-0.4, 'y': 0.25, 'z': -0.9},
                         ]
                         }"
-        
+
                 },
                 */
     };
@@ -278,7 +296,9 @@ public class ShipFactory
     public static ShipSpec presetFromString(string type)
     {
         var t = ShipType.Adder;
-        ShipType.TryParse(type, true, out t);
+        string cleanType = type.Replace(" ", "").Replace("-", "");
+        ShipType.TryParse(cleanType, true, out t);
+        GD.Print($"Ship type: {type} -> {cleanType} = {t}");
         return Create(presets[t]);
     }
 
@@ -291,7 +311,7 @@ public class ShipFactory
 
     static ShipFactory()
     {
-        FileAccess file = FileAccess.Open("res://ed_ships.csv", FileAccess.ModeFlags.Read);
+        Godot.FileAccess file = Godot.FileAccess.Open("res://ed_ships.csv", Godot.FileAccess.ModeFlags.Read);
         var text = file.GetAsText();
         int i = 0;
         foreach (string line in text.Split('\n'))
@@ -314,14 +334,13 @@ public class ShipFactory
 					'size': '{float.Parse(def[2])}', 
 					'manoeuvrability': {int.Parse(def[4])}, 
 					'maxSpeed': {int.Parse(def[5]) / secondsForSpeed}, // Speed in units/minute? 
-					'maxSpeed': {int.Parse(def[5]) / secondsForSpeed}, // Speed in units/minute? 
 					'boostCoeff': {float.Parse(def[6]) / float.Parse(def[5])},
                     'armor': {float.Parse(def[7])},
                     'shield': {float.Parse(def[8])},
 					'hardpoints' : [ 
 						{{
 							'location': 'One', 
-							'name': 'Weapon_Laser_SmallLaserER_1-Diverse_Optics.turret', 
+							'name': 'Weapon_Laser_SmallLaserPulse_1-Maxell.turret', 
 							'ammo': -1, 
 							'x': 0.55, 'y': 0.05, 'z': 0.25
 						}},
@@ -349,9 +368,21 @@ public class ShipFactory
 							'name': 'PointDefence', 
 							'ammo': 100, 
 							'x':-0.4, 'y': 0.25, 'z': -0.9}},
+
+						{{'Location': 'Seven', 
+							'name': 'Weapon_Gauss_Gauss_0-STOCK.json', 
+							'ammo': 100, 
+							'x':-0.4, 'y': 0.25, 'z': -0.9}},
+
+						{{'Location': 'Eight', 
+							'name': 'Weapon_Autocannon_AC20_1-Defiance.json', 
+							'ammo': 100, 
+							'x':-0.4, 'y': 0.25, 'z': -1.0}},
 					]
 				}}";
         }
+
+        GD.Print($"Ship presets: {presets.Count}");
     }
 }
 

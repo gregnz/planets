@@ -17,6 +17,22 @@ public class MissionController
 
     public MissionBase ActiveMission; // The current C# mission script
 
+    public Node3D PlayerShip => gc.player;
+
+    public int GetShipCount(CombatDirector.Squadron.Attitude attitude)
+    {
+        int count = 0;
+        foreach (var kvp in gc.combatDirector.Squadrons)
+        {
+            if (kvp.Value.attitude == attitude)
+            {
+                count += kvp.Value.squad.Count;
+            }
+        }
+
+        return count;
+    }
+
     private PackedScene npcPrefab = GD.Load<PackedScene>("res://npc.tscn");
     private PackedScene tigersClawPrefab = GD.Load<PackedScene>("res://tigersclaw.tscn");
 
@@ -119,7 +135,6 @@ Note: Success/failure paths
         public List<Squadron> Squads { get; set; }
 
 
-
         public string MissionName { get; set; }
 
         // serializer.Deserialize<Mission>()
@@ -209,10 +224,9 @@ Venice System (You Win)
                     // if (s.attitude == SquadronController.Squadron.Attitude.Enemy) s.target = mc.player.gameObject;
                     // else if (s.attitude == SquadronController.Squadron.Attitude.Friend) s.target = null;
                 }
+
                 squadronId++;
             }
-
-
         }
 
         public String[] Callsigns =
@@ -322,7 +336,10 @@ Venice System (You Win)
         gc.AddChild(ActiveMission); // Add as child so it updates? Or manual update?
         // MissionBase is a Node, so we can just add it to the tree
 
-        // Setup Environment (Asteroids)
+        // Call Setup first so mission can configure asteroids, objectives, etc.
+        ActiveMission.Setup(this);
+
+        // Setup Environment (Asteroids) - AFTER Setup so mission has configured them
         if (ActiveMission.Asteroids.Enabled)
         {
             _activeAsteroidField = gc.SpawnOptimizedAsteroidField(
@@ -331,9 +348,10 @@ Venice System (You Win)
                 ActiveMission.Asteroids.Count
             );
             _activeAsteroidField.OrbitSpeed = ActiveMission.Asteroids.OrbitSpeed;
+            GD.Print(
+                $"[MissionController] Spawned asteroid field at {ActiveMission.Asteroids.Center} with {ActiveMission.Asteroids.Count} asteroids");
         }
 
-        ActiveMission.Setup(this);
         GD.Print($"Started Mission: {ActiveMission.Title}");
     }
 
@@ -354,22 +372,14 @@ Venice System (You Win)
         CombatDirector.Squadron.Attitude attitude
     )
     {
-        int squadronId = 999; // Using a high ID for scripted squads to avoid conflict with legacy for now
-        CombatDirector.Squadron newSquad = gc.combatDirector.RegisterSquadron(squadronId, attitude);
-
-        if (attitude == CombatDirector.Squadron.Attitude.Enemy)
-            newSquad.target = gc.player;
-
-        PackedScene prefab = type == "TigersClaw" ? tigersClawPrefab : npcPrefab;
+        int squadronId = 999 + (int)(GD.Randi() % 1000); // Unique ID for this wing
+        // Pre-register to ensure settings? SpawnShip handles registration if ID provided.
 
         for (int i = 0; i < count; i++)
         {
-            Npc npc = (Npc)prefab.Instantiate();
-            npc.Name = $"{type}_{System.Guid.NewGuid().ToString().Substring(0, 4)}"; // Unique simple name
-            npc.gameController = gc;
-            npc.shipSpecification = ShipFactory.presetFromString(type);
+            string callsign = $"{type}_{System.Guid.NewGuid().ToString().Substring(0, 4)}";
 
-            // Offset spawn position so NPCs don't spawn on top of each other
+            // Offset spawn position
             float spawnOffset = 15.0f;
             float angle = (i * 360f / Mathf.Max(count, 1)) * (Mathf.Pi / 180f);
             Vector3 offset = new Vector3(
@@ -377,40 +387,83 @@ Venice System (You Win)
                 0,
                 Mathf.Sin(angle) * spawnOffset * (i > 0 ? 1 : 0)
             );
-            npc.Position = position + offset;
+            Vector3 spawnPos = position + offset;
 
-            gc.RegisterTarget(npc);
-            gc.SectorRoot.CallDeferred("add_child", npc);
-            newSquad.Add(npc);
-
-            GD.Print($"[Script] Spawned {npc.Name} ({type}) at {npc.Position}");
+            SpawnShip(type, callsign, spawnPos, attitude, false, squadronId);
         }
     }
+
     public void SpawnWingman(string type, string callsign, Vector3 position)
     {
-        int squadronId = 0; // Player Squadron ID
-        CombatDirector.Squadron playerSquad = gc.combatDirector.RegisterSquadron(squadronId, CombatDirector.Squadron.Attitude.Friend);
-        playerSquad.playerSquadron = true;
-        playerSquad.target = null; // Follow player logic handles targeting
+        SpawnShip(type, callsign, position, CombatDirector.Squadron.Attitude.Friend, true);
+    }
 
+    // --- Generalized Spawning ---
+
+    public Npc SpawnShip(
+        string type,
+        string callsign,
+        Vector3 position,
+        CombatDirector.Squadron.Attitude attitude,
+        bool isWingman = false,
+        int? overrideSquadronId = null
+    )
+    {
+        int squadronId;
+        CombatDirector.Squadron squad;
+
+        // Determine Squadron
+        if (overrideSquadronId.HasValue)
+        {
+            squadronId = overrideSquadronId.Value;
+            squad = gc.combatDirector.RegisterSquadron(squadronId, attitude);
+            if (attitude == CombatDirector.Squadron.Attitude.Enemy) squad.target = gc.player;
+            if (isWingman) // Ensure properties
+            {
+                squad.playerSquadron = true;
+                squad.target = null;
+            }
+        }
+        else if (isWingman)
+        {
+            squadronId = 0; // Player Squad
+            squad = gc.combatDirector.RegisterSquadron(squadronId, CombatDirector.Squadron.Attitude.Friend);
+            squad.playerSquadron = true;
+            squad.target = null;
+        }
+        else
+        {
+            // Create a unique squad ID for this ship/group
+            // For single ships, they get their own 1-man squad for now, or we could track shared squads later.
+            squadronId = 900 + (int)(GD.Randi() % 10000);
+            squad = gc.combatDirector.RegisterSquadron(squadronId, attitude);
+
+            if (attitude == CombatDirector.Squadron.Attitude.Enemy)
+            {
+                squad.target = gc.player;
+            }
+        }
+
+        // Instantiate
         PackedScene prefab = type == "TigersClaw" ? tigersClawPrefab : npcPrefab;
         Npc npc = (Npc)prefab.Instantiate();
         npc.Name = callsign;
         npc.gameController = gc;
         npc.shipSpecification = ShipFactory.presetFromString(type);
-        
-        // Wingman Personality
-        // npc.MyPersonality = Npc.Personality.Wingman; // Assuming accessible or Default
-
         npc.Position = position;
 
+        // Register
         gc.RegisterTarget(npc);
         gc.SectorRoot.CallDeferred("add_child", npc);
-        playerSquad.Add(npc);
-        
-        // Default Order
-        npc.ReceiveOrder(new CombatDirector.SquadOrder(CombatDirector.OrderType.FormUp));
+        squad.Add(npc);
 
-        GD.Print($"[Script] Spawned Wingman {npc.Name} at {npc.Position}");
+        // Initial Orders
+        if (isWingman && type != "TigersClaw")
+        {
+            npc.ReceiveOrder(new CombatDirector.SquadOrder(CombatDirector.OrderType.FormUp));
+        }
+
+        GD.Print($"[Script] SpawnShip: {callsign} ({type}) Attitude:{attitude} Wingman:{isWingman}");
+        return npc;
     }
 }

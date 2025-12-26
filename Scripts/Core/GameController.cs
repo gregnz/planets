@@ -25,12 +25,38 @@ public partial class GameController : Node3D
     private SignalBus signalBus;
 
 
-
     // Start is called before the first frame update
 
     public override void _Ready()
     {
         Engine.TimeScale = 1f;
+        GetTree().AutoAcceptQuit = false;
+
+        // Initialize BulletManager
+        // We defer this or check in Process because CurrentScene might be null in _Ready of Autoload?
+        // Actually, Autoload _Ready runs before Main Scene _Ready. CurrentScene IS null here.
+        // We need to add BulletManager when the Level loads.
+        // Quick fix: Add to root, but ensure it finds the world? 
+        // Better: GameController shouldn't own it directly as child if we want it in Scene.
+        // BUT, for now, let's keep it here but ensure we use the right logic.
+
+        // Strategy Change: 
+        // 1. Create BulletManager as a "Scene singleton" managed by us.
+        // 2. Or just add to Root (`GetTree().Root.AddChild(bm)`). Root is a Viewport.
+        // This puts it in the main viewport, sharing World3D with siblings.
+
+        var bulletManager = new Planetsgodot.Scripts.Combat.BulletManager();
+        bulletManager.Name = "BulletManager";
+        GetTree().Root.CallDeferred("add_child", bulletManager);
+    }
+
+    public override void _Notification(int what)
+    {
+        if (what == NotificationWMCloseRequest)
+        {
+            GD.Print("Quit Request received. Quitting gracefully...");
+            GetTree().Quit();
+        }
     }
 
     public override void _EnterTree()
@@ -102,6 +128,7 @@ public partial class GameController : Node3D
             GD.PrintErr("Campaign Manager not ready. Starting Default Mission.");
             Mc.LoadMission("mission_01_patrol");
         }
+
         signalBus = GetNode<SignalBus>("/root/SignalBus");
         SpawnPlanets();
     }
@@ -191,26 +218,26 @@ public partial class GameController : Node3D
         // Loop to find next valid target
         int startIndex = targetIndex;
         int attempts = possibleTargets.Count;
-        
+
         for (int i = 0; i < attempts; i++)
         {
             targetIndex += inc;
-            
+
             // Wrap handling
             if (targetIndex < 0) targetIndex = possibleTargets.Count - 1;
             if (targetIndex >= possibleTargets.Count) targetIndex = 0;
-            
+
             ITarget candidate = possibleTargets[targetIndex];
-            
+
             // Filter: Only select Enemies
             if (candidate.Attitude == CombatDirector.Squadron.Attitude.Enemy)
             {
                 candidate.SetTargeted(true);
-                 signalBus.EmitSignal("NpcTargetChanged", candidate.GetStatus());
-                 return candidate;
+                signalBus.EmitSignal("NpcTargetChanged", candidate.GetStatus());
+                return candidate;
             }
         }
-        
+
         // No match found
         GD.Print("No MATCHING target found.");
         return null;

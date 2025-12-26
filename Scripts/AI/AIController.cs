@@ -15,6 +15,28 @@ using Planetsgodot.Scripts.Controllers;
 public partial class AIController : Node
 {
     private NavigationSystem _navSystem;
+    // private Queue<Vector3> _currentPath; // Legacy
+    // private Vector3 _currentPathDest; // Legacy
+    // private const float WaypointAcceptanceRadius = 40.0f; // Legacy
+
+    // Trail Following ("Chase the Rabbit")
+    private struct TrailPoint
+    {
+        public Vector3 Position;
+        public double Timestamp;
+    }
+
+    private List<TrailPoint> _trailPoints = new List<TrailPoint>();
+    private double _lastTrailTime = 0;
+    private const double TrailRecordInterval = 0.25; // Create a point every 0.25s
+    private const double TrailMaxAge = 10.0; // Keep points for 10 seconds
+    private Vector3 _currentRabbitPos = Vector3.Zero; // The specific point we are chasing
+
+    // Debug
+    private MeshInstance3D _debugMeshInstance;
+    private ImmediateMesh _debugImmediateMesh;
+    private Material _debugMaterial;
+
     public enum AIState
     {
         Idle, // Do nothing, coast to stop
@@ -27,6 +49,7 @@ public partial class AIController : Node
         CombatFly, // Boids/Arcade flight (Separation + Swooping)
         Evasion, // Jinking behavior
         Retreat, // Run away from target
+        Warp, // High speed travel
     }
 
     public enum TacticalPhase
@@ -37,36 +60,16 @@ public partial class AIController : Node
     }
 
     // === EXPORTED PROPERTIES ===
-    [Export]
-    public AIState CurrentState { get; set; } = AIState.Arrive;
+    [Export] public AIState CurrentState { get; set; } = AIState.Arrive;
 
-    [ExportGroup("Tuning")]
-    [Export]
-    public float ArrivalRadius { get; set; } = 5.0f;
+    [ExportGroup("Tuning")] [Export] public float ArrivalRadius { get; set; } = 5.0f;
 
-    [Export]
-    public float SlowdownRadius { get; set; } = 25.0f;
+    [Export] public float SlowdownRadius { get; set; } = 25.0f;
 
-    [Export]
-    public float OrientationTolerance { get; set; } = 0.05f;
+    [Export] public float OrientationTolerance { get; set; } = 0.05f;
 
-    private bool _enableCollisionAvoidance = true;
 
-    [Export]
-    public bool EnableCollisionAvoidance
-    {
-        get => _enableCollisionAvoidance;
-        set
-        {
-            _enableCollisionAvoidance = value;
-            if (_pilot != null)
-                _pilot.CollisionAvoidanceEnabled = value;
-        }
-    }
-
-    [ExportGroup("Debug")]
-    [Export]
-    private bool _debugDraw = true;
+    [ExportGroup("Debug")] [Export] private bool _debugDraw = true;
 
     // === TARGET PROPERTIES ===
     public Node3D TargetNode { get; set; } = null;
@@ -74,6 +77,7 @@ public partial class AIController : Node
     public float TargetOrientation { get; set; } = 0.0f;
     public TacticalPosition AttackTactic { get; set; } = TacticalPosition.Direct;
     public float AttackDistance { get; set; } = 15.0f;
+    public Vector3 WarpTarget { get; set; }
 
     // === FORMATION ===
     public FormationManager Formation { get; private set; }
@@ -98,30 +102,102 @@ public partial class AIController : Node
 
     private Vector3 _evasionDirection; // NEW: Persist the evasion vector
 
+    // Optimization: Throttled Steering
+    private double _steeringTimer = 0;
+    private const double SteeringInterval = 0.1; // 10Hz updates
+    private Vector3 _cachedBestDirection = Vector3.Forward;
+
+
+    private void SetupDebugDrawing()
+    {
+        _debugImmediateMesh = new ImmediateMesh();
+        _debugMeshInstance = new MeshInstance3D
+        {
+            Mesh = _debugImmediateMesh,
+            CastShadow = GeometryInstance3D.ShadowCastingSetting.Off
+        };
+
+        // Ensure it's visible in game
+        var material = new StandardMaterial3D();
+        material.ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded;
+        material.VertexColorUseAsAlbedo = true;
+        material.Transparency = BaseMaterial3D.TransparencyEnum.Alpha;
+        _debugMeshInstance.MaterialOverride = material;
+        _debugMeshInstance.TopLevel = true; // Draw in Global Coordinates independent of ship rotation
+
+        AddChild(_debugMeshInstance);
+    }
+
+    private bool _shouldLog = false;
+    private int _logFrame = 0;
+
     public override void _Ready()
     {
         _pilot = new AIPilot
         {
             ArrivalRadius = ArrivalRadius,
             SlowdownRadius = SlowdownRadius,
-            OrientationToleranceDeg = OrientationTolerance * Mathf.RadToDeg(1f), // Convert if needed
-            CollisionAvoidanceEnabled = EnableCollisionAvoidance,
         };
+
+        _navSystem = new NavigationSystem(); // Initialize NavSystem
 
         Formation = new FormationManager();
         _brain = new AIDecisionEngine(this); // Initialize Brain
 
+        SetupDebugDrawing();
         SetPhysicsProcess(true);
+
+        // Randomize initial timer to stagger updates (Time Slicing)
+        _steeringTimer = GD.RandRange(0.0f, (float)SteeringInterval);
+
+        // Enable logging for Alpha 2
+        // Check parent name because this node is likely named "AIController"
+        if (GetParent().Name.ToString().Contains("Alpha 2"))
+        {
+            _shouldLog = true;
+            GD.Print("AIController: Logging Enabled for Alpha 2");
+        }
+
         GD.Print($"AIController Ready: State={CurrentState}");
+    }
+
+    public override void _Process(double delta)
+    {
+        // ... (Existing Process logic if any, currently AI logic is in PhysicsProcess)
+        DrawDebugPath();
     }
 
     public override void _PhysicsProcess(double delta)
     {
+        _steeringTimer -= delta; // Decrement throttling timer
+
+        if (_shouldLog)
+        {
+            _logFrame++;
+            if (_logFrame % 10 == 0) // Log 6 times a second
+            {
+                string pilotDebug = _pilot != null ? _pilot.GetDebugString() : "null";
+                float dist = 0f;
+                if (_ship?.Rb != null)
+                {
+                    dist = TargetPosition.DistanceTo(_ship.Rb.GlobalPosition);
+                }
+
+                string targetName = TargetNode != null ? TargetNode.Name.ToString() : "None";
+
+                GD.Print(
+                    $"[Alpha 2] State:{CurrentState} Dist:{dist:F1} Tgt:{targetName} {pilotDebug} Phase:{_tacticalPhase} Tactic:{AttackTactic}");
+            }
+        }
+
         if (_ship?.Rb == null || _ship.spec == null)
         {
             GD.PrintErr("AIController: Ship or spec is null!");
             return;
         }
+
+        // Breadcrumbs
+
 
         // Safety check: Am I in the tree?
         if (!IsInsideTree())
@@ -161,10 +237,6 @@ public partial class AIController : Node
         // _ship.MovementZ = _pilot.MovementZ; // Not used/implemented yet
         _ship.boosting = _pilot.Boosting;
 
-        // Debug output (commented to reduce console spam)
-        // GD.Print($"AIController [{CurrentState}]: Target={TargetPosition} " +
-        //  $"MX={_ship.MovementX:F2} MY={_ship.MovementY:F2}");
-
         // Debug visualization
         if (_debugDraw)
         {
@@ -182,19 +254,12 @@ public partial class AIController : Node
             && CurrentState != AIState.Retreat
         )
         {
-            // Re-enable standard avoidance when not in dogfight
-            // Only if globally enabled (Missiles disable this!)
-            if (_pilot != null && EnableCollisionAvoidance)
-                _pilot.CollisionAvoidanceEnabled = true;
             return;
         }
 
         // Logic Moved to LowHealthConsideration
         // The Brain now handles switching to Retreat
         // We just ensure we don't accidentally switch back unless the Brain says so
-
-        if (_pilot != null)
-            _pilot.CollisionAvoidanceEnabled = false;
 
         if (TargetNode == null)
             return;
@@ -265,6 +330,29 @@ public partial class AIController : Node
         // The Brain now handles switching to Evade Tactic based on hit time
 
         // 1. PHASE LOGIC
+
+        // COMBAT FLY (Orbit/Broadside) OVERRIDE
+        if (CurrentState == AIState.CombatFly)
+        {
+            // For CombatFly (Turret/Capital), we want to maintain the Tactical Position (Orbit)
+            // instead of closing in for a dogfight intercept.
+            Vector3 dest = GetTacticalPoint(AttackTactic);
+            TargetPosition = dest;
+
+            // Optional: Periodically switch sides or orbit?
+            // For now, holding the Flank/Tactical position is sufficient for broadsiding.
+            // Boids separation (calculated above) is added effectively by the Pilot logic or separate pass?
+            // In UpdateDogfightLogic, separation was added to TargetPosition in Attack phase.
+            // Let's add it here too.
+            if (IsInstanceValid(TargetNode))
+            {
+                // Add separation force to destination to avoid clumping
+                TargetPosition += separation;
+            }
+
+            return;
+        }
+
         switch (_tacticalPhase)
         {
             case TacticalPhase.Approach:
@@ -294,6 +382,7 @@ public partial class AIController : Node
                     _tacticalPhase = TacticalPhase.Attack;
                     _stateTimer = 5.0f;
                 }
+
                 break;
 
             case TacticalPhase.Attack:
@@ -318,7 +407,8 @@ public partial class AIController : Node
                     predictedPos += right * wave * amp;
                 }
 
-                TargetPosition = predictedPos; // + separation is handled by generic Avoidance? No, by Boids logic usually.
+                TargetPosition =
+                    predictedPos; // + separation is handled by generic Avoidance? No, by Boids logic usually.
                 // We add separation manually? Previous code had '+ separation'.
                 // If we are in AttackRun, we collide? No, we have separation force in Boids?
                 // The previous code explicitly added 'separation' vector. I should calculate it if I replaced the block.
@@ -331,11 +421,13 @@ public partial class AIController : Node
                 {
                     _tacticalPhase = TacticalPhase.Disengage;
                 }
+
                 break;
 
             case TacticalPhase.Disengage:
                 // Goal: Get out
-                TargetPosition = myPos + (_ship.Rb.GlobalTransform.Basis.Z * 100.0f) + separation; // Fly forward/tangent?
+                TargetPosition =
+                    myPos + (_ship.Rb.GlobalTransform.Basis.Z * 100.0f) + separation; // Fly forward/tangent?
                 // Better: Fly away from enemy
                 Vector3 away = (myPos - targetPos).Normalized();
                 TargetPosition = myPos + away * 100.0f + separation;
@@ -346,6 +438,7 @@ public partial class AIController : Node
                     _tacticalPhase = TacticalPhase.Approach;
                     _stateTimer = 8.0f; // Reset timer for new approach
                 }
+
                 break;
         }
     }
@@ -372,7 +465,8 @@ public partial class AIController : Node
         Basis tBasis = TargetNode.GlobalTransform.Basis;
         // If Target is not Nod3D, use identity? TargetNode is Node3D.
 
-        float dist = 20.0f;
+        float dist = 5.0f;
+        return tPos + tBasis.Z * dist; // Front
 
         switch (tactic)
         {
@@ -460,6 +554,9 @@ public partial class AIController : Node
         _pilot.ArrivalRadius = ArrivalRadius;
         _pilot.SlowdownRadius = SlowdownRadius;
 
+        // Warp Logic
+        _ship.InWarp = (CurrentState == AIState.Warp);
+
         if (CurrentState != AIState.Formation && _pilot.IgnoredColliders.Count > 0)
         {
             _pilot.IgnoredColliders.Clear();
@@ -467,6 +564,12 @@ public partial class AIController : Node
 
         switch (CurrentState)
         {
+            case AIState.Warp:
+                _pilot.TargetPosition = WarpTarget;
+                _pilot.DesiredSpeed = ShipController.WarpSpeed;
+                _pilot.Boosting = true;
+                break;
+
             case AIState.Idle:
                 // Stop and stay still at current position
                 _pilot.TargetPosition = _ship.Rb.GlobalPosition;
@@ -481,8 +584,6 @@ public partial class AIController : Node
                 _pilot.DesiredSpeed = _ship.spec.maxSpeed;
 
                 // MISSILE CORNERING: Handle by AIPilot now (Turn then Burn)
-                _pilot.ArrivalRadius = 0.1f;
-                _pilot.SlowdownRadius = 0.2f;
                 break;
 
             case AIState.Arrive:
@@ -500,35 +601,48 @@ public partial class AIController : Node
                 break;
 
             case AIState.AttackRun:
+            {
                 // Arcade Dogfight Logic
                 // We use the pilot to steer towards a calculated intercept point
                 // But we handle the "Breakaway" logic here by changing the target
 
-                _pilot.TargetPosition = TargetPosition;
+                // Use Context Steering to navigate to the attack position
+                // This ensures obstacle avoidance and smooth flight (Slipstreaming)
+                // Use Throttled Wrapper
+                Vector3 bestDir = GetSteeringDirection(TargetPosition);
+
+                // "Carrot on a stick" - Project target out to ensure full speed
+                // But if we are very close to the strategic point, allow direct arrival
+                float distToDest = (_ship.Rb.GlobalPosition - TargetPosition).Length();
+                if (distToDest < 20.0f)
+                {
+                    _pilot.TargetPosition = TargetPosition;
+                }
+                else
+                {
+                    _pilot.TargetPosition = _ship.Rb.GlobalPosition + bestDir * 100.0f;
+                }
+
                 _pilot.DesiredSpeed = _ship.spec.maxSpeed; // Default to max speed
 
-                // CORNERING LOGIC: Slow down if we need to turn to face target
-                // This prevents "orbiting" where we fly too fast to turn tight enough
-                float angleToTarget = Mathf.Abs(_pilot.DebugAngleToTarget);
-                if (angleToTarget > 45.0f)
-                {
-                    _pilot.DesiredSpeed *= 0.1f; // Slam brakes to turn
-                }
-                else if (angleToTarget > 20.0f)
-                {
-                    _pilot.DesiredSpeed *= 0.5f; // Slow down to corner
-                }
-
-                _pilot.ArrivalRadius = 2.0f;
-                _pilot.SlowdownRadius = 10.0f;
+                _pilot.ArrivalRadius = 5.0f;
+                _pilot.SlowdownRadius = 0.0f; // Disable slowdown for attack runs to prevent jerking
 
                 // If we are getting close, maintain speed!
-                if ((TargetPosition - _ship.Rb.GlobalPosition).Length() < 15.0f)
+                if (distToDest < 30.0f)
                 {
+                    // Ensure we don't stop even if "arriving" at the tactical point
                     _pilot.DesiredSpeed = _ship.spec.maxSpeed;
-                    _pilot.SlowdownRadius = 0.0f; // Don't slow down
                 }
+
+                // Ignore target collision during attack run
+                if (TargetNode != null && !_pilot.IgnoredColliders.Contains(TargetNode))
+                {
+                    _pilot.IgnoredColliders.Add(TargetNode);
+                }
+
                 break;
+            }
 
             case AIState.CombatFly:
                 // Just fly towards the target vector (set by controller)
@@ -537,6 +651,12 @@ public partial class AIController : Node
                 _pilot.SlowdownRadius = 0f;
                 _pilot.ArrivalRadius = 5f;
                 _pilot.ArrivalRadius = 5f;
+                // Ignore target collision during combat fly
+                if (TargetNode != null && !_pilot.IgnoredColliders.Contains(TargetNode))
+                {
+                    _pilot.IgnoredColliders.Add(TargetNode);
+                }
+
                 break;
 
             case AIState.Evasion:
@@ -557,6 +677,7 @@ public partial class AIController : Node
                     _tacticalPhase = TacticalPhase.Approach;
                     CurrentState = AIState.AttackRun;
                 }
+
                 break;
 
             case AIState.Retreat:
@@ -592,6 +713,7 @@ public partial class AIController : Node
                     _pilot.ArrivalRadius = 3.0f;
                     _pilot.SlowdownRadius = 15.0f;
                 }
+
                 break;
 
             case AIState.Formation:
@@ -621,48 +743,40 @@ public partial class AIController : Node
 
                     // Feed-Forward Prediction: Target where the leader WILL be
                     // This reduces "lag" in turns and speed changes
-                    float lookaheadTime = 1.0f; 
+                    float lookaheadTime = 1.0f;
                     Vector3 predictedLeaderPos = leaderPos + (leaderVel * lookaheadTime);
 
                     Vector3 formationSlotPos = Formation.GetFormationPosition(
-                        FormationIndex, 
-                        predictedLeaderPos, 
+                        FormationIndex,
+                        predictedLeaderPos,
                         leaderRotY
                     );
                     _pilot.TargetOrientation = Formation.GetFormationOrientation(
-                        FormationIndex, 
+                        FormationIndex,
                         leaderRotY
                     );
-                    
-                    // === NAVIGATION SYSTEM INTEGRATION ===
-                    if (_navSystem == null) _navSystem = new NavigationSystem();
-                    
-                    // Generate Path to the SLOT, not the leader
-                    Queue<Vector3> path = _navSystem.GetPath(_ship.Rb, formationSlotPos, _pilot.IgnoredColliders);
-                    
-                    if (path.Count > 0)
-                    {
-                        Vector3 nextWaypoint = path.Peek();
-                        // Fly to the waypoint. 
-                        // Note: If we are close to it, we should probably dequeue it, 
-                        // but NavSystem regenerates every frame currently so it will automatically 
-                        // return the next point once we pass the detour.
-                         _pilot.TargetPosition = nextWaypoint;
-                    }
-                    else
-                    {
-                         // Should not happen as GetPath always returns at least end point
-                         _pilot.TargetPosition = formationSlotPos;
-                    }
-                    
+
+                    // === NAVIGATION SYSTEM (CONTEXT STEERING) ===
+                    // Use Throttled Wrapper
+                    Vector3 bestDir = GetSteeringDirection(formationSlotPos);
+
+                    // Set Target as "Carrot on a stick"
+                    // If we are close to the target (< 20m), just fly directly to it to arrive logic works.
+                    float distToTarget = _ship.Rb.GlobalPosition.DistanceTo(formationSlotPos);
+                    // Always use Context Steering for the target direction
+                    // But scale the offset by the actual distance so the Pilot calculates the correct arrival braking.
+                    _pilot.TargetPosition = _ship.Rb.GlobalPosition + bestDir * distToTarget;
+
+
                     float leaderSpeed = leaderVel.Length();
                     // Set DesiredSpeed to MAX to allow catch-up. 
                     // The AIPilot "Time Based Arrival" will naturally regulate speed to match LeaderSpeed 
                     // when we are at the correct Prediction Distance (Speed = Dist / 1.0).
                     _pilot.DesiredSpeed = _ship.spec.maxSpeed;
-                    
+
                     // Match boost if falling behind
-                    if (leaderSpeed > _ship.spec.maxSpeed + 5.0f || (_pilot.TargetPosition - _ship.Rb.GlobalPosition).Length() > 50.0f) 
+                    if (leaderSpeed > _ship.spec.maxSpeed + 5.0f ||
+                        (_pilot.TargetPosition - _ship.Rb.GlobalPosition).Length() > 50.0f)
                     {
                         _pilot.ForceBoost = true;
                     }
@@ -674,6 +788,7 @@ public partial class AIController : Node
                     _pilot.ArrivalRadius = 2.0f;
                     _pilot.SlowdownRadius = 25.0f; // Reduced from 50 to 25 to fix "crawling" approach
                 }
+
                 break;
         }
     }
@@ -749,7 +864,7 @@ public partial class AIController : Node
         DebugDraw3D.DrawLine(shipPos, shipPos + forward, Colors.Red);
     }
 
-    // === CONVENIENCE METHODS ===
+// === CONVENIENCE METHODS ===
 
     /// <summary>
     /// Set target to fly to a position and stop
@@ -849,6 +964,7 @@ public partial class AIController : Node
             // Or just a random vector on the plane
             threatDir = new Vector3((float)GD.RandRange(-1.0, 1.0), 0, (float)GD.RandRange(-1.0, 1.0)).Normalized();
         }
+
         Vector3 myVel = _ship.Rb.LinearVelocity;
 
         // 2. Decide Evasive Vector
@@ -893,5 +1009,247 @@ public partial class AIController : Node
         GD.Print(
             $"AI {Name}: Entering Evasion! Duration={_stateTimer:F1}s Dir={_evasionDirection}"
         );
+    }
+
+    private void DrawDebugPath()
+    {
+        // Debug Print to check visibility
+        // if (_logFrame % 60 == 0) GD.Print($"AI {Name}: Trail Count={_trailPoints.Count} Rabbit={_currentRabbitPos}");
+
+        _debugImmediateMesh.ClearSurfaces();
+
+        // DRAW NAV SYSTEM RAYS (Context Map Visualization)
+        if (_navSystem != null)
+        {
+            Vector3 shipPos = _ship.Rb.GlobalPosition;
+            float[] danger = _navSystem.DangerMap;
+            float[] interest = _navSystem.InterestMap;
+            Vector3[] dirs = _navSystem.RayDirections;
+
+            // First pass: Count vertices and check if we have anything to draw
+            bool hasVertices = false;
+
+            _debugImmediateMesh.SurfaceBegin(Mesh.PrimitiveType.Lines);
+
+            for (int i = 0; i < dirs.Length; i++)
+            {
+                float d = danger[i];
+                float val = interest[i];
+
+                if (d > 0.1f)
+                {
+                    _debugImmediateMesh.SurfaceSetColor(Colors.Red);
+                    Vector3 end = shipPos + dirs[i] * (d * 50.0f);
+                    _debugImmediateMesh.SurfaceAddVertex(shipPos);
+                    _debugImmediateMesh.SurfaceAddVertex(end);
+                    hasVertices = true;
+                }
+                else if (val > 0.1f)
+                {
+                    _debugImmediateMesh.SurfaceSetColor(Colors.Green);
+                    Vector3 end = shipPos + dirs[i] * (val * 20.0f);
+                    _debugImmediateMesh.SurfaceAddVertex(shipPos);
+                    _debugImmediateMesh.SurfaceAddVertex(end);
+                    hasVertices = true;
+                }
+            }
+
+            // Prevent crash: "No vertices were added"
+            if (!hasVertices)
+            {
+                // Draw a tiny invisible line to satisfy Godot
+                _debugImmediateMesh.SurfaceSetColor(new Color(0, 0, 0, 0));
+                _debugImmediateMesh.SurfaceAddVertex(shipPos);
+                _debugImmediateMesh.SurfaceAddVertex(shipPos + Vector3.Up * 0.01f);
+            }
+
+            _debugImmediateMesh.SurfaceEnd();
+        }
+
+        if (_navSystem != null)
+        {
+            var rays = _navSystem.RayDirections;
+            var interest = _navSystem.InterestMap;
+            var danger = _navSystem.DangerMap;
+            Vector3 bestDir = _navSystem.BestDirection;
+
+            if (rays == null) return;
+
+            _debugImmediateMesh.SurfaceBegin(Mesh.PrimitiveType.Lines);
+            Vector3 startP = _ship.Rb.GlobalPosition;
+
+            for (int i = 0; i < rays.Length; i++)
+            {
+                Vector3 rayDir = rays[i];
+
+                // Draw base ray (Faint Grey)
+                _debugImmediateMesh.SurfaceSetColor(new Color(0.5f, 0.5f, 0.5f, 0.1f));
+                _debugImmediateMesh.SurfaceAddVertex(startP);
+                _debugImmediateMesh.SurfaceAddVertex(startP + rayDir * 2.0f);
+
+                // Draw Interest (Green)
+                if (interest[i] > 0)
+                {
+                    _debugImmediateMesh.SurfaceSetColor(Colors.Green);
+                    _debugImmediateMesh.SurfaceAddVertex(startP);
+                    _debugImmediateMesh.SurfaceAddVertex(startP + rayDir * interest[i] * 5.0f);
+                }
+
+                // Draw Danger (Red)
+                if (danger[i] > 0)
+                {
+                    _debugImmediateMesh.SurfaceSetColor(Colors.Red);
+                    _debugImmediateMesh.SurfaceAddVertex(startP);
+                    _debugImmediateMesh.SurfaceAddVertex(startP + rayDir * danger[i] * 10.0f);
+                }
+            }
+
+            // Draw Best Dir (Blue)
+            _debugImmediateMesh.SurfaceSetColor(Colors.Blue);
+            _debugImmediateMesh.SurfaceAddVertex(startP);
+            _debugImmediateMesh.SurfaceAddVertex(startP + bestDir * 15.0f);
+
+
+            // Draw Trail (Cyan) and Rabbit (Magenta)
+            if (_trailPoints != null)
+            {
+                foreach (var pt in _trailPoints)
+                {
+                    Vector3 crumb = pt.Position;
+                    float size = 0.5f;
+                    _debugImmediateMesh.SurfaceSetColor(Colors.Cyan);
+                    _debugImmediateMesh.SurfaceAddVertex(crumb + Vector3.Up * size);
+                    _debugImmediateMesh.SurfaceAddVertex(crumb - Vector3.Up * size);
+                    _debugImmediateMesh.SurfaceAddVertex(crumb + Vector3.Right * size);
+                    _debugImmediateMesh.SurfaceAddVertex(crumb - Vector3.Right * size);
+                    _debugImmediateMesh.SurfaceAddVertex(crumb + Vector3.Forward * size);
+                    _debugImmediateMesh.SurfaceAddVertex(crumb - Vector3.Forward * size);
+                }
+            }
+
+            // Draw Rabbit
+            if (_currentRabbitPos != Vector3.Zero)
+            {
+                Vector3 r = _currentRabbitPos;
+                _debugImmediateMesh.SurfaceSetColor(Colors.Magenta);
+                _debugImmediateMesh.SurfaceAddVertex(r + Vector3.Up * 2);
+                _debugImmediateMesh.SurfaceAddVertex(r - Vector3.Up * 2);
+                _debugImmediateMesh.SurfaceAddVertex(r + Vector3.Right * 2);
+                _debugImmediateMesh.SurfaceAddVertex(r - Vector3.Right * 2);
+                _debugImmediateMesh.SurfaceAddVertex(r + Vector3.Forward * 2);
+                _debugImmediateMesh.SurfaceAddVertex(r - Vector3.Forward * 2);
+            }
+
+            _debugImmediateMesh.SurfaceEnd();
+        }
+    }
+
+    private void UpdateTrail()
+    {
+        if (TargetNode != null)
+        {
+            double now = Time.GetTicksMsec() / 1000.0;
+            if (now - _lastTrailTime > TrailRecordInterval)
+            {
+                Vector3 pos = TargetNode.GlobalPosition;
+
+                // Add new point
+                _trailPoints.Add(new TrailPoint { Position = pos, Timestamp = now });
+                _lastTrailTime = now;
+
+                // Prune old points
+                while (_trailPoints.Count > 0 && (now - _trailPoints[0].Timestamp > TrailMaxAge))
+                {
+                    _trailPoints.RemoveAt(0);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Finds the "Rabbit" - the furthest visible point on the trail to chase.
+    /// </summary>
+    private Vector3 GetPursuitTarget()
+    {
+        // Default: Target Position
+        if (TargetNode == null) return TargetPosition;
+
+        Vector3 targetPos = TargetNode.GlobalPosition;
+        PhysicsDirectSpaceState3D spaceState = _ship.Rb.GetWorld3D().DirectSpaceState;
+
+        // Check if we can see the target directly
+        if (CanSeePoint(spaceState, targetPos))
+        {
+            _currentRabbitPos = targetPos;
+            return targetPos;
+        }
+
+        // If not, find the freshest trail point we CAN see
+        // Iterate backwards (Newest -> Oldest)
+        for (int i = _trailPoints.Count - 1; i >= 0; i--)
+        {
+            if (CanSeePoint(spaceState, _trailPoints[i].Position))
+            {
+                _currentRabbitPos = _trailPoints[i].Position;
+                return _currentRabbitPos;
+            }
+        }
+
+        // Fallback: If we see nothing, just aim at the last known (Oldest).
+        if (_trailPoints.Count > 0)
+        {
+            _currentRabbitPos = _trailPoints[0].Position;
+            return _currentRabbitPos;
+        }
+
+        return targetPos;
+    }
+
+    private bool CanSeePoint(PhysicsDirectSpaceState3D spaceState, Vector3 point)
+    {
+        Vector3 from = _ship.Rb.GlobalPosition;
+        var query = PhysicsRayQueryParameters3D.Create(from, point);
+
+        // Exclude self
+        Godot.Collections.Array<Godot.Rid> exclude = new Godot.Collections.Array<Godot.Rid>();
+        exclude.Add(_ship.Rb.GetRid());
+
+        // Exclude Target (we want to see THOUGH the target to the point, but target blocks ray?)
+        if (TargetNode is CollisionObject3D targetCol) exclude.Add(targetCol.GetRid());
+
+        // Mask 1 is default (Environment usually).
+        // Let's assume Mask 1.
+
+        query.Exclude = exclude;
+
+        var result = spaceState.IntersectRay(query);
+        // If no hit, we see it.
+        return result.Count == 0;
+    }
+
+    private Vector3 GetSteeringDirection(Vector3 target)
+    {
+        if (_steeringTimer <= 0)
+        {
+            // Use Pursuit Logic if following a target
+            Vector3 finalTarget = target;
+            if (CurrentState == AIState.AttackRun || CurrentState == AIState.Seek)
+            {
+                UpdateTrail();
+                finalTarget = GetPursuitTarget();
+            }
+
+            // Just pass the single target to NavigationSystem
+            // We NO LONGER pass the breadcrumb list
+            _cachedBestDirection = _navSystem.GetBestDirection(
+                _ship.Rb,
+                finalTarget,
+                _pilot.IgnoredColliders,
+                _ship.currentSpeed
+            );
+            _steeringTimer = SteeringInterval;
+        }
+
+        return _cachedBestDirection;
     }
 }

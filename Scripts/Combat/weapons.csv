@@ -1,0 +1,166 @@
+Name,Category,Type,Subtype,BonusA,BonusB,MinRange,MaxRange,AmmoCategory,StartAmmoCapacity,HeatGenerated,Damage,OverheatedDamageMultiplier,EvasiveDamageMultiplier,EvasivePipsIgnored,DamageVariance,HeatDamage,AccuracyModifier,CriticalChanceMultiplier,IndirectFireCapable,RefireModifier,ShotsWhenFired,ProjectilesPerShot,AttackRecoil,Instability,InventorySize,Tonnage,FiringDelay
+Weapon_Flamer_Flamer_0-STOCK.json,AntiPersonnel,Flamer,Flamer,,,0.00,90.00,Flamer,4.00,0.00,5.00,0.00,0.00,0.00,0.00,10.00,0.00,1.00,FALSE,0.00,1.00,1.00,0.00,0.00,1.00,2,0
+Weapon_Flamer_Flamer_1-Hotshot.json,AntiPersonnel,Flamer,Flamer,+ 5 Dmg.,,0.00,90.00,Flamer,4.00,0.00,10.00,0.00,0.00,0.00,0.00,10.00,0.00,1.00,FALSE,0.00,1.00,1.00,0.00,0.00,1.00,1.00,0.00
+Weapon_Flamer_Flamer_2-Olympus.json,AntiPersonnel,Flamer,Flamer,+ 5 Dmg. (H),,0.00,90.00,Flamer,4.00,0.00,5.00,0.00,0.00,0.00,0.00,15.00,0.00,1.00,FALSE,0.00,1.00,1.00,0.00,0.00,1.00,1.00,0.00
+Weapon_Laser_SmallLaserER_0-STOCK.json,AntiPersonnel,Laser,ERSLaser,,,0.00,150.00,NotSet,0.00,10.00,20.00,0.00,0.00,0.00,0.00,0.00,-1.00,1.25,FALSE,0.00,1.00,1.00,1.00,0.00,1.00,0.50,2.00
+Weapon_Laser_SmallLaserER_1-Diverse_Optics.json,AntiPersonnel,Laser,ERSLaser,+,,0.00,150.00,NotSet,0.00,9.00,20.00,0.00,0.00,0.00,0.00,0.00,-1.00,1.25,FALSE,0.00,1.00,1.00,1.00,0.00,1.00,0.50,0.00
+Weapon_Laser_SmallLaserER_2-BlazeFire.json,AntiPersonnel,Laser,ERSLaser,++,,0.00,150.00,NotSet,0.00,9.00,20.00,0.00,0.00,0.00,0.00,0.00,-1.00,1.30,FALSE,0.00,1.00,1.00,1.00,0.00,1.00,0.50,0.00
+Weapon_Laser_SmallLaserPulse_0-STOCK.json,AntiPersonnel,Laser,SPulse,,,0.00,90.00,NotSet,0.00,10.00,25.00,0.00,0.00,0.00,0.00,0.00,-2.00,1.00,FALSE,0.00,1.00,3.00,1.00,0.00,1.00,1.00,1
+Weapon_Laser_SmallLaserPulse_1-Maxell.json,AntiPersonnel,Laser,SPulse,+,,0.00,90.00,NotSet,0.00,9.00,25.00,0.00,0.00,0.00,0.00,0.00,-2.00,1.00,FALSE,0.00,1.00,3.00,1.00,0.00,1.00,1.00,1
+Weapon_Laser_SmallLaserPulse_2-Magna200P.json,AntiPersonnel,Laser,SPulse,++,,0.00,90.00,NotSet,0.00,8.00,25.00,0.00,0.00,0.00,0.00,0.00,-2.00,1.00,FALSE,0.00,1.00,3.00,1.00,0.00,1.00,1.00,1
+Weapon_Laser_SmallLaser_0-STOCK.json,AntiPersonnel,Laser,SmallLaser,,,0.00,90.00,NotSet,0.00,6.00,20.00,0.00,0.00,0.00,0.00,0.00,-1.00,1.00,FALSE,0.00,1.00,1.00,0.00,0.00,1.00,0.50,0.00
+Weapon_Laser_SmallLaser_1-Diverse_Optics.json,AntiPersonnel,Laser,SmallLaser,+ 1 Acc.,,0.00,90.00,NotSet,0.00,6.00,20.00,0.00,0.00,0.00,0.00,0.00,-2.00,1.00,FALSE,0.00,1.00,1.00,0.00,0.00,1.00,0.50,0.00
+Weapon_Laser_SmallLaser_1-ExoStar.json,AntiPersonnel,Laser,SmallLaser,+ 25% Crit.,,0.00,90.00,NotSet,0.00,6.00,20.00,0.00,0.00,0.00,0.00,0.00,-1.00,1.25,FALSE,0.00,1.00,1.00,0.00,0.00,1.00,0.50,0.00
+Weapon_Laser_SmallLaser_1-Magna.json,AntiPersonnel,Laser,SmallLaser,+ 5 Dmg.,,0.00,90.00,NotSet,0.00,6.00,25.00,0.00,0.00,0.00,0.00,0.00,-1.00,1.00,FALSE,0.00,1.00,1.00,0.00,0.00,1.00,0.50,0.00
+Weapon_Laser_SmallLaser_2-Diverse_Optics.json,AntiPersonnel,Laser,SmallLaser,+ 3 Acc.,,0.00,90.00,NotSet,0.00,6.00,20.00,0.00,0.00,0.00,0.00,0.00,-4.00,1.00,FALSE,0.00,1.00,1.00,0.00,0.00,1.00,0.50,0.00
+Weapon_Laser_SmallLaser_2-ExoStar.json,AntiPersonnel,Laser,SmallLaser,+ 50% Crit.,,0.00,90.00,NotSet,0.00,6.00,20.00,0.00,0.00,0.00,0.00,0.00,-1.00,1.50,FALSE,0.00,1.00,1.00,0.00,0.00,1.00,0.50,0.00
+Weapon_Laser_SmallLaser_2-Intek.json,AntiPersonnel,Laser,SmallLaser,+ 5 Dmg.,+ 25% Crit.,0.00,90.00,NotSet,0.00,6.00,25.00,0.00,0.00,0.00,0.00,0.00,-1.00,1.25,FALSE,0.00,1.00,1.00,0.00,0.00,1.00,0.50,0.00
+Weapon_Laser_SmallLaser_2-Magna.json,AntiPersonnel,Laser,SmallLaser,+ 10 Dmg.,,0.00,90.00,NotSet,0.00,6.00,30.00,0.00,0.00,0.00,0.00,0.00,-1.00,1.00,FALSE,0.00,1.00,1.00,0.00,0.00,1.00,0.50,0.00
+Weapon_Laser_SmallLaser_3-Intek.json,AntiPersonnel,Laser,SmallLaser,+ 10 Dmg.,+ 50% Crit.,0.00,90.00,NotSet,0.00,6.00,30.00,0.00,0.00,0.00,0.00,0.00,-1.00,1.50,FALSE,0.00,1.00,1.00,0.00,0.00,1.00,0.50,0.00
+Weapon_MachineGun_MachineGun_0-STOCK.json,AntiPersonnel,MachineGun,MachineGun,,,0.00,90.00,MG,0.00,0.00,3.00,0.00,0.00,0.00,0.00,0.00,0.00,1.50,FALSE,0.00,5.00,1.00,0.00,0.00,1.00,0.50,.1
+Weapon_Laser_LargeLaserER_0-STOCK.json,Energy,Laser,ERLLaser,,,0.00,570.00,NotSet,0.00,25.00,40.00,0.00,0.00,0.00,0.00,0.00,-1.00,1.25,FALSE,0.00,1.00,1.00,1.00,0.00,2.00,5.00,0.00
+Weapon_Laser_LargeLaserER_1-Blankenburg25.json,Energy,Laser,ERLLaser,+,,0.00,570.00,NotSet,0.00,25.00,40.00,0.00,0.00,0.00,0.00,0.00,-1.00,1.25,FALSE,0.00,1.00,1.00,1.00,0.00,2.00,4.00,0.00
+Weapon_Laser_LargeLaserER_2-BlazeFire.json,Energy,Laser,ERLLaser,++,,0.00,570.00,NotSet,0.00,25.00,40.00,0.00,0.00,0.00,0.00,0.00,-1.00,1.30,FALSE,0.00,1.00,1.00,1.00,0.00,2.00,4.00,0.00
+Weapon_Laser_LargeLaserPulse_0-STOCK.json,Energy,Laser,LPulse,,,0.00,450.00,NotSet,0.00,23.00,45.00,0.00,0.00,0.00,0.00,0.00,-2.00,1.00,FALSE,0.00,1.00,3.00,1.00,0.00,2.00,7.00,1
+Weapon_Laser_LargeLaserPulse_1-Thunderbolt12.json,Energy,Laser,LPulse,+,,0.00,450.00,NotSet,0.00,23.00,45.00,0.00,0.00,0.00,0.00,0.00,-2.00,1.00,FALSE,0.00,1.00,3.00,1.00,0.00,2.00,6.00,1
+Weapon_Laser_LargeLaserPulse_2-Exostar.json,Energy,Laser,LPulse,++,,0.00,450.00,NotSet,0.00,23.00,45.00,0.00,0.00,0.00,0.00,0.00,-3.00,1.00,FALSE,0.00,1.00,3.00,1.00,0.00,2.00,6.00,1
+Weapon_Laser_LargeLaser_0-STOCK.json,Energy,Laser,LargeLaser,,,0.00,450.00,NotSet,0.00,18.00,40.00,0.00,0.00,0.00,0.00,0.00,-1.00,1.00,FALSE,0.00,1.00,1.00,1.00,0.00,2.00,5.00,0.00
+Weapon_Laser_LargeLaser_1-Diverse_Optics.json,Energy,Laser,LargeLaser,+ 1 Acc.,,0.00,450.00,NotSet,0.00,18.00,40.00,0.00,0.00,0.00,0.00,0.00,-2.00,1.00,FALSE,0.00,1.00,1.00,1.00,0.00,2.00,5.00,0.00
+Weapon_Laser_LargeLaser_1-ExoStar.json,Energy,Laser,LargeLaser,+ 25% Crit.,,0.00,450.00,NotSet,0.00,18.00,40.00,0.00,0.00,0.00,0.00,0.00,-1.00,1.25,FALSE,0.00,1.00,1.00,1.00,0.00,2.00,5.00,0.00
+Weapon_Laser_LargeLaser_1-Intek.json,Energy,Laser,LargeLaser,+ 5 Dmg.,,0.00,450.00,NotSet,0.00,18.00,45.00,0.00,0.00,0.00,0.00,0.00,-1.00,1.00,FALSE,0.00,1.00,1.00,1.00,0.00,2.00,5.00,0.00
+Weapon_Laser_LargeLaser_2-Diverse_Optics.json,Energy,Laser,LargeLaser,+ 3 Acc.,,0.00,450.00,NotSet,0.00,18.00,40.00,0.00,0.00,0.00,0.00,0.00,-4.00,1.00,FALSE,0.00,1.00,1.00,1.00,0.00,2.00,5.00,0.00
+Weapon_Laser_LargeLaser_2-ExoStar.json,Energy,Laser,LargeLaser,+ 50% Crit.,,0.00,450.00,NotSet,0.00,18.00,40.00,0.00,0.00,0.00,0.00,0.00,-1.00,1.50,FALSE,0.00,1.00,1.00,1.00,0.00,2.00,5.00,0.00
+Weapon_Laser_LargeLaser_2-Intek.json,Energy,Laser,LargeLaser,+ 10 Dmg.,,0.00,450.00,NotSet,0.00,18.00,50.00,0.00,0.00,0.00,0.00,0.00,-1.00,1.00,FALSE,0.00,1.00,1.00,1.00,0.00,2.00,5.00,0.00
+Weapon_Laser_LargeLaser_2-Magna.json,Energy,Laser,LargeLaser,+ 5 Dmg.,+ 1 Acc.,0.00,450.00,NotSet,0.00,18.00,45.00,0.00,0.00,0.00,0.00,0.00,-2.00,1.00,FALSE,0.00,1.00,1.00,1.00,0.00,2.00,5.00,0.00
+Weapon_Laser_LargeLaser_3-Magna.json,Energy,Laser,LargeLaser,+ 10 Dmg.,+ 3 Acc.,0.00,450.00,NotSet,0.00,18.00,50.00,0.00,0.00,0.00,0.00,0.00,-4.00,1.00,FALSE,0.00,1.00,1.00,1.00,0.00,2.00,5.00,0.00
+Weapon_PPC_PPCER_0-STOCK.json,Energy,PPC,PPCER,,,0.00,690.00,NotSet,0.00,45.00,50.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,0.00,1.00,1.00,3.00,20.00,3.00,7.00,1
+Weapon_PPC_PPCER_1-MagnaFirestar.json,Energy,PPC,PPCER,+,,0.00,690.00,NotSet,0.00,45.00,50.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,0.00,1.00,1.00,3.00,20.00,3.00,6.00,1
+Weapon_PPC_PPCER_2-TiegartMagnum.json,Energy,PPC,PPCER,++,,0.00,690.00,NotSet,0.00,45.00,50.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,0.00,1.00,1.00,3.00,20.00,3.00,5.00,1
+Weapon_PPC_PPC_0-STOCK.json,Energy,PPC,PPC,,,90.00,540.00,NotSet,0.00,35.00,50.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,0.00,1.00,1.00,3.00,20.00,3.00,7.00,1
+Weapon_PPC_PPC_1-Ceres_Arms.json,Energy,PPC,PPC,+ 15 Stb.Dmg.,,90.00,540.00,NotSet,0.00,35.00,50.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,0.00,1.00,1.00,3.00,35.00,3.00,7.00,1
+Weapon_PPC_PPC_1-Donal.json,Energy,PPC,PPC,+ 5 Dmg.,,90.00,540.00,NotSet,0.00,35.00,55.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,0.00,1.00,1.00,3.00,20.00,3.00,7.00,1
+Weapon_PPC_PPC_1-Tiegart.json,Energy,PPC,PPC,+ 2 Acc.,,90.00,540.00,NotSet,0.00,35.00,50.00,0.00,0.00,0.00,0.00,0.00,-2.00,1.00,FALSE,0.00,1.00,1.00,3.00,20.00,3.00,7.00,1
+Weapon_PPC_PPC_2-Ceres_Arms.json,Energy,PPC,PPC,+ 30 Stb.Dmg.,,90.00,540.00,NotSet,0.00,35.00,50.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,0.00,1.00,1.00,3.00,50.00,3.00,7.00,1
+Weapon_PPC_PPC_2-Donal.json,Energy,PPC,PPC,+ 10 Dmg.,,90.00,540.00,NotSet,0.00,35.00,60.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,0.00,1.00,1.00,3.00,20.00,3.00,7.00,1
+Weapon_PPC_PPC_2-Tiegart.json,Energy,PPC,PPC,+ 4 Acc.,,90.00,540.00,NotSet,0.00,35.00,50.00,0.00,0.00,0.00,0.00,0.00,-4.00,1.00,FALSE,0.00,1.00,1.00,3.00,20.00,3.00,7.00,1
+Weapon_Laser_MediumLaserER_0-STOCK.json,Energy,Laser,ERMLaser,,,0.00,360.00,NotSet,0.00,20.00,25.00,0.00,0.00,0.00,0.00,0.00,-1.00,1.25,FALSE,0.00,1.00,1.00,1.00,0.00,1.00,1.00,0.00
+Weapon_Laser_MediumLaserER_1-MagnaVI.json,Energy,Laser,ERMLaser,+,,0.00,360.00,NotSet,0.00,18.00,25.00,0.00,0.00,0.00,0.00,0.00,-1.00,1.25,FALSE,0.00,1.00,1.00,1.00,0.00,1.00,1.00,0.00
+Weapon_Laser_MediumLaserER_1-MagnaVI.turret,Energy,Laser,ERMLaser,+,,0.00,360.00,NotSet,0.00,18.00,25.00,0.00,0.00,0.00,0.00,0.00,-1.00,1.25,FALSE,0.00,1.00,1.00,1.00,0.00,1.00,1.00,0.00
+Weapon_Laser_MediumLaserER_2-BrightBloom.json,Energy,Laser,ERMLaser,++,,0.00,360.00,NotSet,0.00,18.00,25.00,0.00,0.00,0.00,0.00,0.00,-1.00,1.30,FALSE,0.00,1.00,1.00,1.00,0.00,1.00,1.00,0.00
+Weapon_Laser_MediumLaserPulse_0-STOCK.json,Energy,Laser,MPulse,,,0.00,270.00,NotSet,0.00,16.00,30.00,0.00,0.00,0.00,0.00,0.00,-2.00,1.00,FALSE,0.00,1.00,3.00,1.00,0.00,1.00,2.00,1
+Weapon_Laser_MediumLaserPulse_1-RakerIV.json,Energy,Laser,MPulse,+,,0.00,270.00,NotSet,0.00,14.00,30.00,0.00,0.00,0.00,0.00,0.00,-2.00,1.00,FALSE,0.00,1.00,3.00,1.00,0.00,1.00,2.00,1
+Weapon_Laser_MediumLaserPulse_2-Magna400P.json,Energy,Laser,MPulse,++,,0.00,270.00,NotSet,0.00,14.00,30.00,0.00,0.00,0.00,0.00,0.00,-3.00,1.00,FALSE,0.00,1.00,3.00,1.00,0.00,1.00,2.00,1
+Weapon_Laser_MediumLaser_0-STOCK.json,Energy,Laser,MediumLaser,,,0.00,270.00,NotSet,0.00,12.00,25.00,0.00,0.00,0.00,0.00,0.00,-1.00,1.00,FALSE,0.00,1.00,1.00,1.00,0.00,1.00,1.00,0.00
+Weapon_Laser_MediumLaser_1-ExoStar.json,Energy,Laser,MediumLaser,,+ 25% Crit.,0.00,270.00,NotSet,0.00,12.00,25.00,0.00,0.00,0.00,0.00,0.00,-1.00,1.25,FALSE,0.00,1.00,1.00,1.00,0.00,1.00,1.00,0.00
+Weapon_Laser_MediumLaser_1-Intek.json,Energy,Laser,MediumLaser,+1 Acc.,,0.00,270.00,NotSet,0.00,12.00,25.00,0.00,0.00,0.00,0.00,0.00,-2.00,1.00,FALSE,0.00,1.00,1.00,1.00,0.00,1.00,1.00,0.00
+Weapon_Laser_MediumLaser_1-Magna.json,Energy,Laser,MediumLaser,+ 5 Dmg.,,0.00,270.00,NotSet,0.00,12.00,30.00,0.00,0.00,0.00,0.00,0.00,-1.00,1.00,FALSE,0.00,1.00,1.00,1.00,0.00,1.00,1.00,0.00
+Weapon_Laser_MediumLaser_2-Diverse_Optics.json,Energy,Laser,MediumLaser,+ 1 Acc.,+ 25% Crit.,0.00,270.00,NotSet,0.00,12.00,25.00,0.00,0.00,0.00,0.00,0.00,-2.00,1.25,FALSE,0.00,1.00,1.00,1.00,0.00,1.00,1.00,0.00
+Weapon_Laser_MediumLaser_2-ExoStar.json,Energy,Laser,MediumLaser,,+ 50% Crit.,0.00,270.00,NotSet,0.00,12.00,25.00,0.00,0.00,0.00,0.00,0.00,-1.00,1.50,FALSE,0.00,1.00,1.00,1.00,0.00,1.00,1.00,0.00
+Weapon_Laser_MediumLaser_2-Intek.json,Energy,Laser,MediumLaser,+3 Acc.,,0.00,270.00,NotSet,0.00,12.00,25.00,0.00,0.00,0.00,0.00,0.00,-4.00,1.00,FALSE,0.00,1.00,1.00,1.00,0.00,1.00,1.00,0.00
+Weapon_Laser_MediumLaser_2-Magna.json,Energy,Laser,MediumLaser,+ 10 Dmg.,,0.00,270.00,NotSet,0.00,12.00,35.00,0.00,0.00,0.00,0.00,0.00,-1.00,1.00,FALSE,0.00,1.00,1.00,1.00,0.00,1.00,1.00,0.00
+Weapon_Laser_MediumLaser_3-Diverse_Optics.json,Energy,Laser,MediumLaser,+ 3 Acc.,+ 50% Crit.,0.00,270.00,NotSet,0.00,12.00,25.00,0.00,0.00,0.00,0.00,0.00,-4.00,1.50,FALSE,0.00,1.00,1.00,1.00,0.00,1.00,1.00,0
+Weapon_Autocannon_AC2_0-STOCK.json,Ballistic,Autocannon,AC2,,,120.00,720.00,AC2,0.00,4.00,25.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,1.00,1.00,3.00,1.00,5.00,1.00,6.00,.2
+Weapon_Autocannon_AC2_1-Defiance.json,Ballistic,Autocannon,AC2,+ 2 Acc.,,120.00,720.00,AC2,0.00,4.00,25.00,0.00,0.00,0.00,0.00,0.00,-2.00,1.00,FALSE,1.00,1.00,3.00,1.00,5.00,1.00,6.00,.2
+Weapon_Autocannon_AC2_1-Federated.json,Ballistic,Autocannon,AC2,+ 25% Crit.,,120.00,720.00,AC2,0.00,4.00,25.00,0.00,0.00,0.00,0.00,0.00,0.00,1.25,FALSE,1.00,1.00,3.00,1.00,5.00,1.00,6.00,.2
+Weapon_Autocannon_AC2_1-Kali_Yama.json,Ballistic,Autocannon,AC2,+ 5 Dmg.,,120.00,720.00,AC2,0.00,4.00,30.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,1.00,1.00,4.00,1.00,5.00,1.00,6.00,.2
+Weapon_Autocannon_AC2_1-Mydron.json,Ballistic,Autocannon,AC2,+ 10 Stb.Dmg.,,120.00,720.00,AC2,0.00,4.00,25.00,0.00,0.00,0.00,0.00,0.00,0.00,.00,FALSE,0.25,1.00,5.00,1.00,15.00,1.00,6.00,.2
+Weapon_Autocannon_AC2_2-Defiance.json,Ballistic,Autocannon,AC2,+ 4 Acc.,,120.00,720.00,AC2,0.00,4.00,25.00,0.00,0.00,0.00,0.00,0.00,-4.00,1.00,FALSE,0.20,1.00,3.00,1.00,5.00,1.00,6.00,.2
+Weapon_Autocannon_AC2_2-Federated.json,Ballistic,Autocannon,AC2,+ 50% Crit.,,120.00,720.00,AC2,0.00,4.00,25.00,0.00,0.00,0.00,0.00,0.00,0.00,1.50,FALSE,1.00,1.00,3.00,1.00,5.00,1.00,6.00,.2
+Weapon_Autocannon_AC2_2-Imperator.json,Ballistic,Autocannon,AC2,+ 2 Acc.,+ 25% Crit.,120.00,720.00,AC2,0.00,4.00,25.00,0.00,0.00,0.00,0.00,0.00,-2.00,1.25,FALSE,1.00,1.00,3.00,1.00,5.00,1.00,6.00,.2
+Weapon_Autocannon_AC2_2-Kali_Yama.json,Ballistic,Autocannon,AC2,+ 10 Dmg.,,120.00,720.00,AC2,0.00,4.00,35.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,1.00,1.00,5.00,1.00,5.00,1.00,6.00,.2
+Weapon_Autocannon_AC2_2-Mydron.json,Ballistic,Autocannon,AC2,+ 20 Stb.Dmg.,,120.00,720.00,AC2,0.00,4.00,25.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,0.20,1.00,7.00,1.00,25.00,1.00,6.00,.2
+Weapon_Autocannon_AC2_3-Imperator.json,Ballistic,Autocannon,AC2,+ 4 Acc.,+ 50% Crit.,120.00,720.00,AC2,0.00,4.00,25.00,0.00,0.00,0.00,0.00,0.00,-4.00,1.50,FALSE,1.00,1.00,3.00,1.00,5.00,1.00,6.00,.2
+Weapon_Autocannon_AC5_0-STOCK.json,Ballistic,Autocannon,AC5,,,90.00,540.00,AC5,0.00,8.00,45.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,1.00,1.00,2.00,2.00,10.00,2.00,8.00,.5
+Weapon_Autocannon_AC5_1-Defiance.json,Ballistic,Autocannon,AC5,+ 2 Acc.,,90.00,540.00,AC5,0.00,8.00,45.00,0.00,0.00,0.00,0.00,0.00,-2.00,1.00,FALSE,1.00,1.00,2.00,2.00,10.00,2.00,8.00,.5
+Weapon_Autocannon_AC5_1-Federated.json,Ballistic,Autocannon,AC5,+ 25% Crit.,,90.00,540.00,AC5,0.00,8.00,45.00,0.00,0.00,0.00,0.00,0.00,0.00,1.25,FALSE,1.00,1.00,2.00,2.00,10.00,2.00,8.00,.5
+Weapon_Autocannon_AC5_1-Imperator.json,Ballistic,Autocannon,AC5,+ 10 Stb.Dmg.,,90.00,540.00,AC5,0.00,8.00,45.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,1.00,1.00,4.00,2.00,20.00,2.00,8.00,.5
+Weapon_Autocannon_AC5_1-Kali_Yama.json,Ballistic,Autocannon,AC5,+ 5 Dmg.,,90.00,540.00,AC5,0.00,8.00,50.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,1.00,1.00,3.00,2.00,10.00,2.00,8.00,.5
+Weapon_Autocannon_AC5_2-Defiance.json,Ballistic,Autocannon,AC5,+ 4 Acc.,,90.00,540.00,AC5,0.00,8.00,45.00,0.00,0.00,0.00,0.00,0.00,-4.00,1.00,FALSE,1.00,1.00,2.00,2.00,10.00,2.00,8.00,.5
+Weapon_Autocannon_AC5_2-Federated.json,Ballistic,Autocannon,AC5,+ 50% Crit.,,90.00,540.00,AC5,0.00,8.00,45.00,0.00,0.00,0.00,0.00,0.00,0.00,1.50,FALSE,1.00,1.00,2.00,2.00,10.00,2.00,8.00,.5
+Weapon_Autocannon_AC5_2-Imperator.json,Ballistic,Autocannon,AC5,+ 20 Stb.Dmg.,,90.00,540.00,AC5,0.00,8.00,45.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,1.00,1.00,6.00,2.00,30.00,2.00,8.00,.5
+Weapon_Autocannon_AC5_2-Kali_Yama.json,Ballistic,Autocannon,AC5,+ 10 Dmg.,,90.00,540.00,AC5,0.00,8.00,55.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,1.00,1.00,4.00,2.00,10.00,2.00,8.00,.5
+Weapon_Autocannon_AC5_2-Mydron.json,Ballistic,Autocannon,AC5,+ 2 Acc.,+ 10 Stb.Dmg.,90.00,540.00,AC5,0.00,8.00,45.00,0.00,0.00,0.00,0.00,0.00,-2.00,1.00,FALSE,1.00,1.00,4.00,2.00,20.00,2.00,8.00,.5
+Weapon_Autocannon_AC5_3-Mydron.json,Ballistic,Autocannon,AC5,+ 4 Acc.,+ 20 Stb.Dmg.,90.00,540.00,AC5,0.00,8.00,45.00,0.00,0.00,0.00,0.00,0.00,-4.00,1.00,FALSE,1.00,1.00,6.00,2.00,30.00,2.00,8.00,.5
+Weapon_Autocannon_AC10_0-STOCK.json,Ballistic,Autocannon,AC10,,,0.00,450.00,AC10,0.00,12.00,60.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,2.00,1.00,1.00,3.00,20.00,3.00,12.00,.4
+Weapon_Autocannon_AC10_1-Defiance.json,Ballistic,Autocannon,AC10,+ 2 Acc.,,0.00,450.00,AC10,0.00,12.00,60.00,0.00,0.00,0.00,0.00,0.00,-2.00,1.00,FALSE,2.00,1.00,1.00,3.00,20.00,3.00,12.00,.4
+Weapon_Autocannon_AC10_1-Imperator.json,Ballistic,Autocannon,AC10,+ 25% Crit.,,0.00,450.00,AC10,0.00,12.00,60.00,0.00,0.00,0.00,0.00,0.00,0.00,1.25,FALSE,2.00,1.00,1.00,3.00,20.00,3.00,12.00,.4
+Weapon_Autocannon_AC10_1-Kali_Yama.json,Ballistic,Autocannon,AC10,+ 5 Dmg.,,0.00,450.00,AC10,0.00,12.00,65.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,2.00,1.00,2.00,3.00,20.00,3.00,12.00,.4
+Weapon_Autocannon_AC10_1-Mydron.json,Ballistic,Autocannon,AC10,+ 10 Stb.Dmg.,,0.00,450.00,AC10,0.00,12.00,60.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,2.00,1.00,2.00,3.00,30.00,3.00,12.00,.4
+Weapon_Autocannon_AC10_2-Defiance.json,Ballistic,Autocannon,AC10,+ 4 Acc.,,0.00,450.00,AC10,0.00,12.00,60.00,0.00,0.00,0.00,0.00,0.00,-4.00,1.00,FALSE,2.00,1.00,1.00,3.00,20.00,3.00,12.00,.4
+Weapon_Autocannon_AC10_2-Federated.json,Ballistic,Autocannon,AC10,+ 25% Crit.,+ 10 Stb.Dmg.,0.00,450.00,AC10,0.00,12.00,60.00,0.00,0.00,0.00,0.00,0.00,0.00,1.25,FALSE,2.00,1.00,2.00,3.00,30.00,3.00,12.00,.4
+Weapon_Autocannon_AC10_2-Imperator.json,Ballistic,Autocannon,AC10,+ 50% Crit.,,0.00,450.00,AC10,0.00,12.00,60.00,0.00,0.00,0.00,0.00,0.00,0.00,1.50,FALSE,2.00,1.00,1.00,3.00,20.00,3.00,12.00,.4
+Weapon_Autocannon_AC10_2-Kali_Yama.json,Ballistic,Autocannon,AC10,+ 10 Dmg.,,0.00,450.00,AC10,0.00,12.00,70.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,2.00,1.00,3.00,3.00,20.00,3.00,12.00,.4
+Weapon_Autocannon_AC10_2-Mydron.json,Ballistic,Autocannon,AC10,+ 20 Stb.Dmg.,,0.00,450.00,AC10,0.00,12.00,60.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,2.00,1.00,3.00,3.00,40.00,3.00,12.00,.4
+Weapon_Autocannon_AC10_3-Federated.json,Ballistic,Autocannon,AC10,+ 50% Crit.,+ 20 Stb.Dmg.,0.00,450.00,AC10,0.00,12.00,60.00,0.00,0.00,0.00,0.00,0.00,0.00,1.50,FALSE,2.00,1.00,3.00,3.00,40.00,3.00,12.00,.4
+Weapon_Autocannon_AC20_0-STOCK.json,Ballistic,Autocannon,AC20,,,0.00,270.00,AC20,0.00,24.00,100.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,2.00,1.00,1.00,4.00,40.00,4.00,14.00,.5
+Weapon_Autocannon_AC20_1-Defiance.json,Ballistic,Autocannon,AC20,+ 2 Acc.,,0.00,270.00,AC20,0.00,24.00,100.00,0.00,0.00,0.00,0.00,0.00,-2.00,1.00,FALSE,2.00,20,1.00,4.00,40.00,4.00,14.00,.5
+Weapon_Autocannon_AC20_1-Federated.json,Ballistic,Autocannon,AC20,+ 25% Crit.,,0.00,270.00,AC20,0.00,24.00,100.00,0.00,0.00,0.00,0.00,0.00,0.00,1.25,FALSE,2.00,1.00,1.00,4.00,40.00,4.00,14.00,.5
+Weapon_Autocannon_AC20_1-Imperator.json,Ballistic,Autocannon,AC20,+ 10 Dmg.,,0.00,270.00,AC20,0.00,24.00,110.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,2.00,1.00,2.00,4.00,40.00,4.00,14.00,.5
+Weapon_Autocannon_AC20_1-Mydron.json,Ballistic,Autocannon,AC20,+ 10 Stb.Dmg.,,0.00,270.00,AC20,0.00,24.00,100.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,2.00,1.00,2.00,4.00,50.00,4.00,14.00,.5
+Weapon_Autocannon_AC20_2-Defiance.json,Ballistic,Autocannon,AC20,+ 4 Acc.,,0.00,270.00,AC20,0.00,24.00,100.00,0.00,0.00,0.00,0.00,0.00,-4.00,1.00,FALSE,2.00,1.00,1.00,4.00,40.00,4.00,14.00,.5
+Weapon_Autocannon_AC20_2-Federated.json,Ballistic,Autocannon,AC20,+ 50% Crit.,,0.00,270.00,AC20,0.00,24.00,100.00,0.00,0.00,0.00,0.00,0.00,0.00,1.50,FALSE,2.00,1.00,1.00,4.00,40.00,4.00,14.00,.5
+Weapon_Autocannon_AC20_2-Imperator.json,Ballistic,Autocannon,AC20,+ 20 Dmg.,,0.00,270.00,AC20,0.00,24.00,120.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,2.00,1.00,3.00,4.00,40.00,4.00,14.00,.5
+Weapon_Autocannon_AC20_2-Kali_Yama.json,Ballistic,Autocannon,AC20,+ 10 Dmg.,+ 10 Stb.Dmg.,0.00,270.00,AC20,0.00,24.00,110.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,2.00,1.00,2.00,4.00,50.00,4.00,14.00,.5
+Weapon_Autocannon_AC20_2-Mydron.json,Ballistic,Autocannon,AC20,+ 20 Stb.Dmg.,,0.00,270.00,AC20,0.00,24.00,100.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,2.00,1.00,3.00,4.00,60.00,4.00,14.00,.5
+Weapon_Autocannon_AC20_3-Kali_Yama.json,Ballistic,Autocannon,AC20,+ 20 Dmg.,+ 20 Stb.Dmg.,0.00,270.00,AC20,0.00,24.00,120.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,2.00,1.00,3.00,4.00,60.00,4.00,14.00,.5
+Weapon_Gauss_Gauss_0-STOCK.json,Ballistic,Gauss,Gauss,,,180.00,2660.00,GAUSS,0.00,5.00,75.00,0.00,0.00,0.00,0.00,0.00,-1.00,1.00,FALSE,0.00,1.00,1.00,4.00,40.00,5.00,15.00,4.00
+Weapon_Gauss_Gauss_1-M7.json,Ballistic,Gauss,Gauss,,,180.00,660.00,GAUSS,0.00,5.00,75.00,0.00,0.00,0.00,0.00,0.00,-1.00,1.00,FALSE,0.00,1.00,1.00,4.00,40.00,5.00,13.00,4
+Weapon_Gauss_Gauss_2-M9.json,Ballistic,Gauss,Gauss,,,180.00,660.00,GAUSS,0.00,5.00,75.00,0.00,0.00,0.00,0.00,0.00,-1.00,1.00,FALSE,0.00,1.00,1.00,4.00,40.00,4.00,13.00,4
+Weapon_SRM_SRM2_0-STOCK.json,Missile,SRM,SRM2,,,0.00,270.00,SRM,0.00,4.00,8.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,0.00,2.00,1.00,1.00,3.00,1.00,1.00,2
+Weapon_SRM_SRM2_1-Holly.json,Missile,SRM,SRM2,+ 2 Dmg.,,0.00,270.00,SRM,0.00,4.00,10.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,0.00,2.00,1.00,1.00,3.00,1.00,1.00,2
+Weapon_SRM_SRM2_1-Irian.json,Missile,SRM,SRM2,+ 25% Crit.,,0.00,270.00,SRM,0.00,4.00,8.00,0.00,0.00,0.00,0.00,0.00,0.00,1.25,FALSE,0.00,2.00,1.00,1.00,3.00,1.00,1.00,2
+Weapon_SRM_SRM2_2-Holly.json,Missile,SRM,SRM2,+ 4 Dmg.,,0.00,270.00,SRM,0.00,4.00,12.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,0.00,2.00,1.00,1.00,3.00,1.00,1.00,2
+Weapon_SRM_SRM2_2-Irian.json,Missile,SRM,SRM2,+ 50% Crit.,,0.00,270.00,SRM,0.00,4.00,8.00,0.00,0.00,0.00,0.00,0.00,0.00,1.50,FALSE,0.00,2.00,1.00,1.00,3.00,1.00,1.00,2
+Weapon_SRM_SRM2_2-Valiant.json,Missile,SRM,SRM2,+ 2 Dmg.,+ 1 Stb.Dmg.,0.00,270.00,SRM,0.00,4.00,10.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,0.00,2.00,1.00,1.00,4.00,1.00,1.00,2
+Weapon_SRM_SRM2_3-Valiant.json,Missile,SRM,SRM2,+ 4 Dmg.,+ 2 Stb.Dmg.,0.00,270.00,SRM,0.00,4.00,12.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,0.00,2.00,1.00,1.00,5.00,1.00,1.00,2
+Weapon_SRM_SRM4_0-STOCK.json,Missile,SRM,SRM4,,,0.00,270.00,SRM,0.00,8.00,8.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,0.00,4.00,1.00,1.00,3.00,1.00,2.00,2
+Weapon_SRM_SRM4_1-Holly.json,Missile,SRM,SRM4,+ 2 Dmg.,,0.00,270.00,SRM,0.00,8.00,10.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,0.00,4.00,1.00,1.00,3.00,1.00,2.00,2
+Weapon_SRM_SRM4_1-Irian.json,Missile,SRM,SRM4,+ 25% Crit.,,0.00,270.00,SRM,0.00,8.00,8.00,0.00,0.00,0.00,0.00,0.00,0.00,1.25,FALSE,0.00,4.00,1.00,1.00,3.00,1.00,2.00,2
+Weapon_SRM_SRM4_2-Holly.json,Missile,SRM,SRM4,+ 4 Dmg.,,0.00,270.00,SRM,0.00,8.00,12.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,0.00,4.00,1.00,1.00,3.00,1.00,2.00,2
+Weapon_SRM_SRM4_2-Irian.json,Missile,SRM,SRM4,+ 50% Crit.,,0.00,270.00,SRM,0.00,8.00,8.00,0.00,0.00,0.00,0.00,0.00,0.00,1.50,FALSE,0.00,4.00,1.00,1.00,3.00,1.00,2.00,2
+Weapon_SRM_SRM4_2-Valiant.json,Missile,SRM,SRM4,+ 2 Dmg.,+ 1 Stb.Dmg.,0.00,270.00,SRM,0.00,8.00,10.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,0.00,4.00,1.00,1.00,4.00,1.00,2.00,2
+Weapon_SRM_SRM4_3-Valiant.json,Missile,SRM,SRM4,+ 4 Dmg.,+ 2 Stb.Dmg.,0.00,270.00,SRM,0.00,8.00,12.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,0.00,4.00,1.00,1.00,5.00,1.00,2.00,2
+Weapon_SRM_SRM6_0-STOCK.json,Missile,SRM,SRM6,,,0.00,270.00,SRM,0.00,12.00,8.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,0.00,6.00,1.00,1.00,3.00,2.00,3.00,2
+Weapon_SRM_SRM6_1-Holly.json,Missile,SRM,SRM6,+ 2 Dmg.,,0.00,270.00,SRM,0.00,12.00,10.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,0.00,6.00,1.00,1.00,3.00,2.00,3.00,2
+Weapon_SRM_SRM6_1-Irian.json,Missile,SRM,SRM6,+ 25% Crit.,,0.00,270.00,SRM,0.00,12.00,8.00,0.00,0.00,0.00,0.00,0.00,0.00,1.25,FALSE,0.00,6.00,1.00,1.00,3.00,2.00,3.00,2
+Weapon_SRM_SRM6_2-Holly.json,Missile,SRM,SRM6,+ 4 Dmg.,,0.00,270.00,SRM,0.00,12.00,12.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,0.00,6.00,1.00,1.00,3.00,2.00,3.00,2
+Weapon_SRM_SRM6_2-Irian.json,Missile,SRM,SRM6,+ 50% Crit.,,0.00,270.00,SRM,0.00,12.00,8.00,0.00,0.00,0.00,0.00,0.00,0.00,1.50,FALSE,0.00,6.00,1.00,1.00,3.00,2.00,3.00,2
+Weapon_SRM_SRM6_2-Valiant.json,Missile,SRM,SRM6,+ 2 Dmg.,+ 1 Stb.Dmg.,0.00,270.00,SRM,0.00,12.00,10.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,0.00,6.00,1.00,1.00,4.00,2.00,3.00,2
+Weapon_SRM_SRM6_3-Valiant.json,Missile,SRM,SRM6,+ 4 Dmg.,+ 2 Stb.Dmg.,0.00,270.00,SRM,0.00,12.00,12.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,0.00,6.00,1.00,1.00,5.00,2.00,3.00,2
+Weapon_LRM_LRM5_0-STOCK.json,Missile,LRM,LRM5,,,180.00,630.00,LRM,0.00,6.00,4.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,TRUE,0.00,5.00,1.00,1.00,2.00,1.00,2.00,2
+Weapon_LRM_LRM5_1-Delta.json,Missile,LRM,LRM5,+ 1 Stb.Dmg.,,180.00,630.00,LRM,0.00,6.00,4.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,TRUE,0.00,5.00,1.00,1.00,3.00,1.00,2.00,2
+Weapon_LRM_LRM5_1-LongFire.json,Missile,LRM,LRM5,+ 25% Crit.,,180.00,630.00,LRM,0.00,6.00,4.00,0.00,0.00,0.00,0.00,0.00,0.00,1.25,TRUE,0.00,5.00,1.00,1.00,2.00,1.00,2.00,2
+Weapon_LRM_LRM5_1-Telos.json,Missile,LRM,LRM5,+ 1 Dmg.,,180.00,630.00,LRM,0.00,6.00,5.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,TRUE,0.00,5.00,1.00,1.00,2.00,1.00,2.00,2
+Weapon_LRM_LRM5_2-Delta.json,Missile,LRM,LRM5,+ 2 Stb.Dmg.,,180.00,630.00,LRM,0.00,6.00,4.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,TRUE,0.00,5.00,1.00,1.00,5.00,1.00,2.00,2
+Weapon_LRM_LRM5_2-LongFire.json,Missile,LRM,LRM5,+ 50% Crit.,,180.00,630.00,LRM,0.00,6.00,4.00,0.00,0.00,0.00,0.00,0.00,0.00,1.50,TRUE,0.00,5.00,1.00,1.00,2.00,1.00,2.00,2
+Weapon_LRM_LRM5_2-Telos.json,Missile,LRM,LRM5,+ 2 Dmg.,,180.00,630.00,LRM,0.00,6.00,6.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,TRUE,0.00,5.00,1.00,1.00,2.00,1.00,2.00,2
+Weapon_LRM_LRM5_2-Zeus.json,Missile,LRM,LRM5,+ 25% Crit.,+ 1 Stb.Dmg.,180.00,630.00,LRM,0.00,6.00,4.00,0.00,0.00,0.00,0.00,0.00,0.00,1.25,TRUE,0.00,5.00,1.00,1.00,3.00,1.00,2.00,2
+Weapon_LRM_LRM5_3-Zeus.json,Missile,LRM,LRM5,+ 50% Crit.,+ 2 Stb.Dmg.,180.00,630.00,LRM,0.00,6.00,4.00,0.00,0.00,0.00,0.00,0.00,0.00,1.50,TRUE,0.00,5.00,1.00,1.00,4.00,1.00,2.00,2
+Weapon_LRM_LRM10_0-STOCK.json,Missile,LRM,LRM10,,,180.00,630.00,LRM,0.00,10.00,4.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,TRUE,0.00,10.00,1.00,1.00,2.00,2.00,5.00,2
+Weapon_LRM_LRM10_1-Delta.json,Missile,LRM,LRM10,+ 1 Stb.Dmg.,,180.00,630.00,LRM,0.00,10.00,4.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,TRUE,0.00,10.00,1.00,1.00,3.00,2.00,5.00,2
+Weapon_LRM_LRM10_1-LongFire.json,Missile,LRM,LRM10,+ 25% Crit.,,180.00,630.00,LRM,0.00,10.00,4.00,0.00,0.00,0.00,0.00,0.00,0.00,1.25,TRUE,0.00,10.00,1.00,1.00,2.00,2.00,5.00,2
+Weapon_LRM_LRM10_1-Telos.json,Missile,LRM,LRM10,+ 1 Dmg.,,180.00,630.00,LRM,0.00,10.00,5.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,TRUE,0.00,10.00,1.00,1.00,2.00,2.00,5.00,2
+Weapon_LRM_LRM10_2-Delta.json,Missile,LRM,LRM10,+ 2 Stb.Dmg.,,180.00,630.00,LRM,0.00,10.00,4.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,TRUE,0.00,10.00,1.00,1.00,5.00,2.00,5.00,2
+Weapon_LRM_LRM10_2-LongFire.json,Missile,LRM,LRM10,+ 50% Crit.,,180.00,630.00,LRM,0.00,10.00,4.00,0.00,0.00,0.00,0.00,0.00,0.00,1.50,TRUE,0.00,10.00,1.00,1.00,2.00,2.00,5.00,2
+Weapon_LRM_LRM10_2-Telos.json,Missile,LRM,LRM10,+ 2 Dmg.,,180.00,630.00,LRM,0.00,10.00,6.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,TRUE,0.00,10.00,1.00,1.00,2.00,2.00,5.00,2
+Weapon_LRM_LRM10_2-Zeus.json,Missile,LRM,LRM10,+ 25% Crit.,+ 1 Stb.Dmg.,180.00,630.00,LRM,0.00,10.00,4.00,0.00,0.00,0.00,0.00,0.00,0.00,1.25,TRUE,0.00,10.00,1.00,1.00,3.00,2.00,5.00,2
+Weapon_LRM_LRM10_3-Zeus.json,Missile,LRM,LRM10,+ 50% Crit.,+ 2 Stb.Dmg.,180.00,630.00,LRM,0.00,10.00,4.00,0.00,0.00,0.00,0.00,0.00,0.00,1.50,TRUE,0.00,10.00,1.00,1.00,4.00,2.00,5.00,2
+Weapon_LRM_LRM15_0-STOCK.json,Missile,LRM,LRM15,,,180.00,630.00,LRM,0.00,14.00,4.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,TRUE,0.00,15.00,1.00,1.00,2.00,3.00,7.00,2
+Weapon_LRM_LRM15_1-Delta.json,Missile,LRM,LRM15,+ 1 Stb.Dmg.,,180.00,630.00,LRM,0.00,14.00,4.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,TRUE,0.00,15.00,1.00,1.00,3.00,3.00,7.00,2
+Weapon_LRM_LRM15_1-LongFire.json,Missile,LRM,LRM15,+ 25% Crit.,,180.00,630.00,LRM,0.00,14.00,4.00,0.00,0.00,0.00,0.00,0.00,0.00,1.25,TRUE,0.00,15.00,1.00,1.00,2.00,3.00,7.00,2
+Weapon_LRM_LRM15_1-Telos.json,Missile,LRM,LRM15,+ 1 Dmg.,,180.00,630.00,LRM,0.00,14.00,5.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,TRUE,0.00,15.00,1.00,1.00,2.00,3.00,7.00,2
+Weapon_LRM_LRM15_2-Delta.json,Missile,LRM,LRM15,+ 2 Stb.Dmg.,,180.00,630.00,LRM,0.00,14.00,4.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,TRUE,0.00,15.00,1.00,1.00,5.00,3.00,7.00,2
+Weapon_LRM_LRM15_2-LongFire.json,Missile,LRM,LRM15,+ 50% Crit.,,180.00,630.00,LRM,0.00,14.00,4.00,0.00,0.00,0.00,0.00,0.00,0.00,1.50,TRUE,0.00,15.00,1.00,1.00,2.00,3.00,7.00,2
+Weapon_LRM_LRM15_2-Telos.json,Missile,LRM,LRM15,+ 2 Dmg.,,180.00,630.00,LRM,0.00,14.00,6.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,TRUE,0.00,15.00,1.00,1.00,2.00,3.00,7.00,2
+Weapon_LRM_LRM15_2-Zeus.json,Missile,LRM,LRM15,+ 25% Crit.,+ 1 Stb.Dmg.,180.00,630.00,LRM,0.00,14.00,4.00,0.00,0.00,0.00,0.00,0.00,0.00,1.25,TRUE,0.00,15.00,1.00,1.00,3.00,3.00,7.00,2
+Weapon_LRM_LRM15_3-Zeus.json,Missile,LRM,LRM15,+ 50% Crit.,+ 2 Stb.Dmg.,180.00,630.00,LRM,0.00,14.00,4.00,0.00,0.00,0.00,0.00,0.00,0.00,1.50,TRUE,0.00,15.00,1.00,1.00,4.00,3.00,7.00,2
+Weapon_LRM_LRM20_0-STOCK.json,Missile,LRM,LRM20,,,180.00,630.00,LRM,0.00,18.00,4.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,TRUE,0.00,20.00,1.00,1.00,2.00,4.00,10.00,2
+Weapon_LRM_LRM20_1-Delta.json,Missile,LRM,LRM20,+ 1 Stb.Dmg.,,180.00,630.00,LRM,0.00,18.00,4.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,TRUE,0.00,20.00,1.00,1.00,3.00,4.00,10.00,2
+Weapon_LRM_LRM20_1-LongFire.json,Missile,LRM,LRM20,+ 25% Crit.,,180.00,630.00,LRM,0.00,18.00,4.00,0.00,0.00,0.00,0.00,0.00,0.00,1.25,TRUE,0.00,20.00,1.00,1.00,2.00,4.00,10.00,2
+Weapon_LRM_LRM20_1-Telos.json,Missile,LRM,LRM20,+ 1 Dmg.,,180.00,630.00,LRM,0.00,18.00,5.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,TRUE,0.00,20.00,1.00,1.00,2.00,4.00,10.00,2
+Weapon_LRM_LRM20_2-Delta.json,Missile,LRM,LRM20,+ 2 Stb.Dmg.,,180.00,630.00,LRM,0.00,18.00,4.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,TRUE,0.00,20.00,1.00,1.00,4.00,4.00,10.00,2
+Weapon_LRM_LRM20_2-LongFire.json,Missile,LRM,LRM20,+ 50% Crit.,,180.00,630.00,LRM,0.00,18.00,4.00,0.00,0.00,0.00,0.00,0.00,0.00,1.50,TRUE,0.00,20.00,1.00,1.00,2.00,4.00,10.00,2
+Weapon_LRM_LRM20_2-Telos.json,Missile,LRM,LRM20,+ 2 Dmg.,,180.00,630.00,LRM,0.00,18.00,6.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,TRUE,0.00,20.00,1.00,1.00,2.00,4.00,10.00,2
+Weapon_LRM_LRM20_2-Zeus.json,Missile,LRM,LRM20,+ 25% Crit.,+ 1 Stb.Dmg.,180.00,630.00,LRM,0.00,18.00,4.00,0.00,0.00,0.00,0.00,0.00,0.00,1.25,TRUE,0.00,20.00,1.00,1.00,3.00,4.00,10.00,2
+Weapon_LRM_LRM20_3-Zeus.json,Missile,LRM,LRM20,+ 50% Crit.,+ 2 Stb.Dmg.,180.00,630.00,LRM,0.00,18.00,4.00,0.00,0.00,0.00,0.00,0.00,0.00,1.50,TRUE,0.00,20.00,1.00,1.00,4.00,4.00,10.00,2
+PointDefence,Defence,PD,PD6,,,0.00,270.00,PD,0.00,4.00,8.00,0.00,0.00,0.00,0.00,0.00,0.00,1.00,FALSE,0.00,2.00,1.00,1.00,3.00,1.00,1.00,0.00

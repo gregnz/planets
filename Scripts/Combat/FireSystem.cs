@@ -26,6 +26,13 @@ public partial class FireSystem : Node
     public float heatTotal = 0;
     public float[] heatSinks = new float[] { 0.2f };
 
+    // Heat management
+    private ShipFactory.ShipSpec _shipSpec;
+    public float HeatCapacity => _shipSpec?.HeatCapacity ?? 100f;
+    public float HeatPercent => HeatCapacity > 0 ? heatTotal / HeatCapacity : 0f;
+    public bool IsOverheated => HeatPercent >= 1.0f;
+    public bool IsCriticalOverheat => HeatPercent >= 1.2f; // 120%
+
     public ITarget currentTarget { get; set; }
 
     Gradient origRendererGradient;
@@ -41,8 +48,16 @@ public partial class FireSystem : Node
         this.owner = owner;
     }
 
+    public void SetShipSpec(ShipFactory.ShipSpec spec)
+    {
+        _shipSpec = spec;
+    }
+
     public void Update(double delta)
     {
+        // Heat dissipation (runs every frame regardless of target)
+        DissipateHeat((float)delta);
+
         if (currentTarget == null || !GodotObject.IsInstanceValid(currentTarget as Node))
             return;
 
@@ -117,6 +132,20 @@ public partial class FireSystem : Node
         {
             StopFiring();
             return;
+        }
+
+        // Firing Delay (Refire Rate) Check
+        if (currentHardpointSpec.FiringDelay > 0)
+        {
+            ulong now = Time.GetTicksMsec();
+            ulong cooldownMs = (ulong)(currentHardpointSpec.FiringDelay * 1000f);
+            if (now < activeHardpoint.lastFireTime + cooldownMs)
+            {
+                StopFiring();
+                return; // Too soon
+            }
+
+            activeHardpoint.lastFireTime = now;
         }
 
         heatTotal += currentHardpointSpec.HeatGenerated;
@@ -195,11 +224,9 @@ public partial class FireSystem : Node
         Vector3 endPos =
             startPos
             - activeHardpoint.hardpointContent.GlobalTransform.Basis.Z.Normalized()
-                * screenLength
-                * 2;
-        Debug.Print(
-            $"{startPos} {endPos} {activeHardpoint.hardpointContent.GlobalTransform.Basis.Z.Normalized()} {screenLength}"
-        );
+            * screenLength
+            * 2;
+
 
         lr.SetPosition(1, endPos);
         var query = PhysicsRayQueryParameters3D.Create(startPos, endPos, 0b111111101);
@@ -222,24 +249,8 @@ public partial class FireSystem : Node
         return result;
     }
 
-    private void FireBallistic(ShipFactory.ShipSpec.Hardpoint hp)
+    private async void FireBallistic(ShipFactory.ShipSpec.Hardpoint hp)
     {
-        // 1. Cooldown Check
-        ulong now = Time.GetTicksMsec();
-        // Assume RefireModifier is in Seconds (e.g. 1.0 = 1 sec delay, 0.1 = 100ms delay)
-        // HardpointSpec values are like "1.00", "2.00".
-        float delaySeconds = hp.HardpointSpec.RefireModifier;
-        if (delaySeconds <= 0)
-            delaySeconds = 0.1f; // Safety minimum
-        ulong delayMs = (ulong)(delaySeconds * 1000f);
-
-        if (now - hp.lastFireTime < delayMs)
-        {
-            return; // Still cooling down
-        }
-
-        hp.lastFireTime = now;
-
         firing = true;
         HardpointSpec currentHardpointSpec = hp.HardpointSpec;
         HardpointSpec.Ballistic currentWeaponSpec = (HardpointSpec.Ballistic)currentHardpointSpec;
@@ -298,23 +309,66 @@ public partial class FireSystem : Node
             b.Position = spawnPosition;
 
             b.enabled = true;
-            b.damage = currentHardpointSpec.Damage;
-            b.Owner = owner; // Assign Owner so bullet can ignore own shield
-            b.range = RangeToScreenLength(currentWeaponSpec);
-            b.AddCollisionExceptionWith(owner);
-            // Add to CurrentScene instead of Root so they get destroyed on scene change
-            owner.GetTree().CurrentScene.AddChild(b);
-            b.LinearVelocity = owner.LinearVelocity;
+            bool isGauss = currentWeaponSpec.Type.Contains("Gauss") || currentWeaponSpec.Subtype.Contains("Gauss");
 
-            // Roll compensation: Only use Y rotation (Yaw)
-            // Use Hardpoint rotation for Turrets, Owner rotation for Fixed
-            Vector3 fireRotation;
-            if (currentWeaponSpec.isTurret)
-                fireRotation = hp.hardpointContent.GlobalRotation;
+            if (isGauss)
+            {
+                b.ProjectileType = "Gauss";
+                b.damage = currentHardpointSpec.Damage;
+                b.Owner = owner; // Assign Owner so bullet can ignore own shield
+                b.range = RangeToScreenLength(currentWeaponSpec);
+                b.AddCollisionExceptionWith(owner);
+                // Add to CurrentScene instead of Root so they get destroyed on scene change
+                owner.GetTree().CurrentScene.AddChild(b);
+                b.LinearVelocity = owner.LinearVelocity;
+
+                // Roll compensation: Only use Y rotation (Yaw)
+                // Use Hardpoint rotation for Turrets, Owner rotation for Fixed
+                Vector3 fireRotation;
+                if (currentWeaponSpec.isTurret)
+                    fireRotation = hp.hardpointContent.GlobalRotation;
+                else
+                    fireRotation = owner.GlobalRotation;
+
+                b.GlobalRotation = new Vector3(0, fireRotation.Y, 0);
+            }
             else
-                fireRotation = owner.GlobalRotation;
+            {
+                // STANDARD/AUTOCANNON -> Use Optimized BulletManager
+                // Clean up the unused Node instance we just created
+                b.QueueFree();
 
-            b.GlobalRotation = new Vector3(0, fireRotation.Y, 0);
+                // Calculate Parameters
+                float damage = currentHardpointSpec.Damage;
+                float range = RangeToScreenLength(currentWeaponSpec);
+                // Muzzle Velocity already includes ship velocity? 
+                // Wait, logic above: "FireSystem sets the base LinearVelocity..." 
+                // Actually the Node-based approach relies on Bullet.cs _Ready to add muzzle velocity?
+                // Looking at old Bullet.cs: "LinearVelocity += -GlobalTransform.Basis.Z * speed;" was commented out?!
+                // Let's assume standard behavior: Ship Velocity + Muzzle Speed * Forward
+
+                float muzzleSpeed = 100f; // Standard MC speed from specs? Or defaulting. 
+                // HardpointSpec might not have explicit MuzzleSpeed field easily accessible, using default for now.
+                // Or better: Bullet.cs had "private float speed = 1000f;"
+
+                Vector3 muzzleVel = -hp.hardpointContent.GlobalTransform.Basis.Z * 5f;
+                if (currentWeaponSpec.isTurret)
+                    muzzleVel = -hp.hardpointContent.GlobalTransform.Basis.Z * 5f;
+                else
+                    muzzleVel = -owner.GlobalTransform.Basis.Z * 5f;
+
+                Vector3 totalVel = owner.LinearVelocity + muzzleVel;
+
+                Planetsgodot.Scripts.Combat.BulletManager.Spawn(
+                    owner, // Context
+                    spawnPosition,
+                    totalVel,
+                    damage,
+                    range,
+                    Colors.Orange, // Autocannon color
+                    owner
+                );
+            }
 
             /*
             if (missileCount == 1) bullet_.GetComponent<Renderer>().material.color = Color.blue;
@@ -334,8 +388,17 @@ public partial class FireSystem : Node
                 barrelRotation = -1;
 
             // activeHardpoint.UpdateAmmunition(-1);
+
+            if (i < missileCount - 1)
+            {
+                await owner.ToSignal(
+                    owner.GetTree().CreateTimer(0.1f),
+                    SceneTreeTimer.SignalName.Timeout
+                );
+            }
         }
 
+        hp.lastFireTime = Time.GetTicksMsec();
         firing = false;
     }
 
@@ -346,10 +409,6 @@ public partial class FireSystem : Node
         HardpointSpec.Missile currentWeaponSpec = (HardpointSpec.Missile)currentHardpointSpec;
         int missileCount = currentWeaponSpec.NumberMissiles;
 
-        // Debug: Log missile count
-        GD.Print(
-            $"Firing {missileCount} missiles from {currentWeaponSpec.name}. CurrentTarget is {(currentTarget != null ? ((Node)currentTarget).Name : "NULL")}"
-        );
 
         for (int i = 0; i < missileCount; i++)
         {
@@ -359,11 +418,11 @@ public partial class FireSystem : Node
 
             if (MissileManager.Instance != null)
             {
-                 MissileManager.Instance.SpawnMissile(
-                    owner, 
-                    currentTarget as Node3D, 
-                    hp.hardpointContent.GlobalPosition, 
-                    hp.hardpointContent.GlobalBasis.GetRotationQuaternion(), 
+                MissileManager.Instance.SpawnMissile(
+                    owner,
+                    currentTarget as Node3D,
+                    hp.hardpointContent.GlobalPosition,
+                    hp.hardpointContent.GlobalBasis.GetRotationQuaternion(),
                     owner.LinearVelocity,
                     i // Pass index for spread calculation
                 );
@@ -418,16 +477,13 @@ public partial class FireSystem : Node
         return currentHardpointSpec.MaxRange / 20f * 2.5f;
     }
 
-    private void FixedUpdate()
+    private void DissipateHeat(float delta)
     {
-        heatTotal -= CalculateHeatSinkageRate();
+        // Use ship's heat dissipation rate, or fallback to heatSinks sum
+        float dissipationRate = _shipSpec?.HeatDissipation ?? heatSinks.Sum();
+        heatTotal -= dissipationRate * delta;
         if (heatTotal < 0)
             heatTotal = 0;
-    }
-
-    private float CalculateHeatSinkageRate()
-    {
-        return heatSinks.Sum();
     }
 
     // private System.Collections.IEnumerator FirePointDefence(ShipFactory.ShipSpec.Hardpoint hp)
@@ -531,14 +587,14 @@ public partial class FireSystem : Node
                     if (ignitionPS != null)
                         ignitionPS.Stop();
                 }
-        
+
                 Transform impact = hp.hardpointContent.transform.Find("Impact");
                 if (impact != null)
                 {
                     ParticleSystem impactPS = impact.GetComponent<ParticleSystem>();
                     if (impactPS != null) impactPS.Stop();
                 }
-        
+
                 StartCoroutine(nameof(Cooldown));
                 */
     }
@@ -564,8 +620,10 @@ public interface IDamageable
 
     public void _OnBodyEntered(Node body);
     Vector3 Position { get; set; }
-    
+
     ShipController MyShip();
 }
 
-public class RaycastHit { }
+public class RaycastHit
+{
+}

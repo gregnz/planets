@@ -42,16 +42,16 @@ public partial class CampaignManager : Node
     public void SaveGame()
     {
         string json = JsonConvert.SerializeObject(State, Formatting.Indented);
-        using var file = FileAccess.Open(SAVE_FILE_PATH, FileAccess.ModeFlags.Write);
+        using var file = Godot.FileAccess.Open(SAVE_FILE_PATH, Godot.FileAccess.ModeFlags.Write);
         file.StoreString(json);
         GD.Print("Game Saved.");
     }
 
     public void LoadGame()
     {
-        if (FileAccess.FileExists(SAVE_FILE_PATH))
+        if (Godot.FileAccess.FileExists(SAVE_FILE_PATH))
         {
-            using var file = FileAccess.Open(SAVE_FILE_PATH, FileAccess.ModeFlags.Read);
+            using var file = Godot.FileAccess.Open(SAVE_FILE_PATH, Godot.FileAccess.ModeFlags.Read);
             string json = file.GetAsText();
             State = JsonConvert.DeserializeObject<CampaignState>(json);
             GD.Print("Game Loaded.");

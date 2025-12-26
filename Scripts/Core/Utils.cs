@@ -3,15 +3,10 @@ using Godot;
 
 namespace utils
 {
-	
-	
 	static class Curves
 	{
 		static Node3D[] sphere;
-		
 
-
-		
 
 		public static void DebugCurve(Vector3[] points, (Vector3, Vector3)[] cps)
 		{
@@ -33,7 +28,6 @@ namespace utils
 		//                     (2*P0 - 5*P1 + 4*P2 - P3) * t2 +
 		//                     (-P0 + 3*P1- 3*P2 + P3) * t3)
 		// }
-
 	}
 
 	static class Util
@@ -52,13 +46,19 @@ namespace utils
 			targetDictionary[key].Add(entry);
 		}
 		*/
-		
-		public static void CalcDrag(Vector3 dragDirection, double crossSectionalArea, float vel, float dragCoefficient, out Vector3 drag)
+
+		public static void CalcDrag(Vector3 dragDirection, double crossSectionalArea, float vel, float dragCoefficient,
+			out Vector3 drag)
 		{
-			float density = 15f; // https://en.wikipedia.org/wiki/Density Air = 1.2, water = 1000
-			double d = 0.5f * density * vel * vel * dragCoefficient * crossSectionalArea;
+			double density = 15.0; // https://en.wikipedia.org/wiki/Density Air = 1.2, water = 1000
+			double v = (double)vel;
+			double d = 0.5 * density * v * v * (double)dragCoefficient * crossSectionalArea;
+
+			// Safety Clamp
+			if (double.IsInfinity(d) || double.IsNaN(d)) d = 0;
+			if (d > 200000.0) d = 200000.0; // Cap force to reasonable physics limit (prevent explosion)
+
 			drag = dragDirection.Normalized() * (float)d;
 		}
-
 	}
 }

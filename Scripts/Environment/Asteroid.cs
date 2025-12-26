@@ -20,6 +20,7 @@ public partial class Asteroid : RigidBody3D, IDamageable, ITarget
 
     public override void _Ready()
     {
+        AddToGroup("Asteroid");
         _getRigidBody3D = this;
     }
 
@@ -95,7 +96,7 @@ public partial class Asteroid : RigidBody3D, IDamageable, ITarget
 
     public void _OnBodyEntered(Node body)
     {
-        GD.Print("Asteroid collided with: ", body.Name);
+        // GD.Print("Asteroid collided with: ", body.Name);
     }
 
     enum AsteroidType
